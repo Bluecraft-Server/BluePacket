@@ -6,6 +6,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import top.bluecraft.bluepacket.client.screen.GunViewScreen;
+import top.bluecraft.bluepacket.common.card.CardUtil;
 import top.bluecraft.bluepacket.init.MenuRegistration;
 
 
@@ -15,7 +16,9 @@ public class ClientModEvents {
         @SubscribeEvent
         public static void clientLoad(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {
-                MenuScreens.register(MenuRegistration.GUN_VIEW_MENU.get(), GunViewScreen::new);
+                MenuScreens.register(MenuRegistration.GUN_VIEW_MENU.get(),
+                        (menu, inventory, component)
+                                -> new GunViewScreen(menu, inventory, component, CardUtil.createCards()));
             });
         }
 }

@@ -16,6 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.Direction;
 import net.minecraft.client.Minecraft;
+import org.jetbrains.annotations.NotNull;
 import top.bluecraft.bluepacket.init.ItemRegistration;
 
 import javax.annotation.Nullable;
@@ -38,7 +39,7 @@ public class GeneralTerminalInventoryCapability implements ICapabilitySerializab
 	private final LazyOptional<ItemStackHandler> inventory = LazyOptional.of(this::createItemHandler);
 
 	@Override
-	public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> capability, @Nullable Direction side) {
+	public <T> @NotNull LazyOptional<T> getCapability(@Nonnull Capability<T> capability, @Nullable Direction side) {
 		return capability == ForgeCapabilities.ITEM_HANDLER ? this.inventory.cast() : LazyOptional.empty();
 	}
 

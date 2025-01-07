@@ -13,6 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import org.jetbrains.annotations.NotNull;
+import top.bluecraft.bluepacket.api.ICard;
 import top.bluecraft.bluepacket.client.menu.GunViewMenu;
 import top.bluecraft.bluepacket.common.card.Card;
 import top.bluecraft.bluepacket.common.page.Page;
@@ -22,7 +24,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	private final Level world;
 	private final int x, y, z;
 	private final Player entity;
-	private List<Card> cards;
+	private final List<ICard> cards;
 	private int selectedCardIndex = 0;
 	private int currentPageIndex = 0;
 	private static final int CARD_WIDTH = 16;
@@ -30,7 +32,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	private static final int CARDS_PER_ROW = 5;
 	private static final int CARD_SPACING = 4;
 
-	public GunViewScreen(GunViewMenu container, Inventory inventory, Component text, List<Card> cards) {
+	public GunViewScreen(GunViewMenu container, Inventory inventory, Component text, List<ICard> cards) {
 		super(container, inventory, text);
 		this.world = container.world;
 		this.x = container.x;
@@ -45,12 +47,12 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	private static final ResourceLocation texture = new ResourceLocation("bluepacket:textures/screens/gun_view.png");
 
 	@Override
-	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+	public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 		// 获取当前选中的卡片和页面
-		Card currentCard = cards.get(selectedCardIndex);
+		ICard currentCard = cards.get(selectedCardIndex);
 		Page currentPage = currentCard.getPage(currentPageIndex);
 
 		// 绘制卡片材质
@@ -58,9 +60,9 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		int cardX = this.width / 2 - 88;
 		int cardY = this.height / 2 - 16;
         if (this.minecraft != null) {
-            this.minecraft.getTextureManager().bindForSetup(currentCard.getResourceLocation());
+            this.minecraft.getTextureManager().bindForSetup(currentCard.resourceLocation());
         }
-        guiGraphics.blit(currentCard.getResourceLocation(), cardX, cardY, 0, 0, 16, 32, 16, 32);
+        guiGraphics.blit(currentCard.resourceLocation(), cardX, cardY, 0, 0, 16, 32, 16, 32);
 
 		// 绘制高亮效果（如果是选中的卡片）
 		if (selectedCardIndex == 0) {
@@ -105,13 +107,13 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	}
 
 	@Override
-	protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+	protected void renderLabels(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY) {
 	}
 
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (button == 0) { // 左键点击
-			Card currentCard = cards.get(selectedCardIndex);
+			ICard currentCard = cards.get(selectedCardIndex);
 			int startX = (this.width - (CARDS_PER_ROW * (CARD_WIDTH + CARD_SPACING) - CARD_SPACING)) / 2;
 			int startY = 50;
 
@@ -133,4 +135,16 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	public void init() {
 		super.init();
 	}
+
+    public Level getWorld() {
+        return world;
+    }
+
+    public int getZ() {
+        return z;
+    }
+
+    public Player getEntity() {
+        return entity;
+    }
 }

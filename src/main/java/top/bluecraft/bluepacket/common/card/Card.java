@@ -3,25 +3,22 @@ package top.bluecraft.bluepacket.common.card;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import top.bluecraft.bluepacket.api.ICard;
 import top.bluecraft.bluepacket.common.page.Page;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class Card {
+public abstract class Card implements ICard {
 
     private static final int ITEMS_PER_PAGE = 110; // 每个页面最多显示的物品数量
-    private final String cardName; // 每个卡片的名称
     private final Inventory inventory; // 这个卡片的物品
     private final List<Page> pages; // 当前卡片的所有页面
-    private final ResourceLocation resourceLocation;
 
-    public Card(ResourceLocation cardTexture, String cardName, Inventory inventory) {
-        this.cardName = cardName;
+    public Card(Inventory inventory) {
         this.inventory = inventory;
         this.pages = new ArrayList<>();
         paginateInventory();
-        this.resourceLocation = cardTexture;
     }
 
     // 分页物品
@@ -54,11 +51,6 @@ public class Card {
         return pages.size();
     }
 
-    // 获取卡片名称
-    public String getCardName() {
-        return cardName;
-    }
-
     // 切换到指定的页面
     public void switchToPage(int pageIndex) {
         if (pageIndex >= 0 && pageIndex < pages.size()) {
@@ -69,10 +61,6 @@ public class Card {
         } else {
             System.out.println("Invalid page index: " + pageIndex);
         }
-    }
-
-    public ResourceLocation getResourceLocation() {
-        return resourceLocation;
     }
 }
 

@@ -16,6 +16,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.core.BlockPos;
+import org.jetbrains.annotations.NotNull;
 import top.bluecraft.bluepacket.BluePacket;
 import top.bluecraft.bluepacket.init.MenuRegistration;
 import top.bluecraft.bluepacket.network.GunViewSlotMessage;
@@ -81,17 +82,17 @@ public class GunViewMenu extends AbstractContainerMenu{
                 int slotID = sj + (si + 1) * 19;
                 this.addSlot(new Slot(inv, slotID, 14 + sj * 18,  14 + si * 18){
                     @Override
-                    public boolean mayPickup(Player pPlayer) {
+                    public boolean mayPickup(@NotNull Player pPlayer) {
                         return false;
                     }
 
                     @Override
-                    public boolean mayPlace(ItemStack pStack) {
+                    public boolean mayPlace(@NotNull ItemStack pStack) {
                         return false;
                     }
 
                     @Override
-                    public void onTake(Player pPlayer, ItemStack pStack) {
+                    public void onTake(@NotNull Player pPlayer, @NotNull ItemStack pStack) {
                         super.onTake(pPlayer, pStack);
                         slotChanged(slotID, 1, 0);
                     }
@@ -106,7 +107,7 @@ public class GunViewMenu extends AbstractContainerMenu{
     }
 
     @Override
-    public boolean stillValid(Player player) {
+    public boolean stillValid(@NotNull Player player) {
         if (this.bound) {
             if (this.boundItemMatcher != null)
                 return this.boundItemMatcher.get();
@@ -119,7 +120,7 @@ public class GunViewMenu extends AbstractContainerMenu{
     }
 
     @Override
-    public ItemStack quickMoveStack(Player playerIn, int index) {
+    public @NotNull ItemStack quickMoveStack(@NotNull Player playerIn, int index) {
         ItemStack itemstack = ItemStack.EMPTY;
         Slot slot = (Slot) this.slots.get(index);
         if (slot.hasItem()) {
@@ -151,7 +152,7 @@ public class GunViewMenu extends AbstractContainerMenu{
     }
 
     @Override
-    protected boolean moveItemStackTo(ItemStack p_38904_, int p_38905_, int p_38906_, boolean p_38907_) {
+    protected boolean moveItemStackTo(@NotNull ItemStack p_38904_, int p_38905_, int p_38906_, boolean p_38907_) {
         boolean flag = false;
         int i = p_38905_;
         if (p_38907_) {
@@ -227,7 +228,7 @@ public class GunViewMenu extends AbstractContainerMenu{
     }
 
     @Override
-    public void removed(Player playerIn) {
+    public void removed(@NotNull Player playerIn) {
         super.removed(playerIn);
         if (!bound && playerIn instanceof ServerPlayer serverPlayer) {
             if (!serverPlayer.isAlive() || serverPlayer.hasDisconnected()) {

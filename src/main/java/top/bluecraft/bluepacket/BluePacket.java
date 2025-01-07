@@ -44,6 +44,7 @@ public class BluePacket {
     }).build());
 
     public BluePacket() {
+        @SuppressWarnings({"removal"})
         IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
         bus.addListener(this::commonSetup);
         ItemRegistration.REGISTRATION.register(bus);

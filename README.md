@@ -1,2 +1,3 @@
 # BluePacket
-A Server Function Util Pack.
+一个转为BlueCraft设计的功能包mod
+求Star喵⭐

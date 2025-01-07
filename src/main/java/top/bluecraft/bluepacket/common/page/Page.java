@@ -1,19 +1,18 @@
 package top.bluecraft.bluepacket.common.page;
 
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 public class Page {
-    private final int pageItemInitial = 110;
-    private final Set<ItemStack> pageItems = new HashSet<>(pageItemInitial);
-    private final Inventory inventory;
-    public Page(Inventory inventory) {
-        this.inventory = inventory;
-        for(int x = 0; x < pageItemInitial; x++) {
-            pageItems.add(inventory.getItem(x));
-        }
+    private final List<ItemStack> items;
+
+    public Page(List<ItemStack> items) {
+        this.items = items;
     }
+
+    public List<ItemStack> getItems() {
+        return items;
+    }
+
+    // 其他页面相关的操作
 }

@@ -5,9 +5,7 @@ import top.bluecraft.bluepacket.BluePacket;
 import top.bluecraft.bluepacket.client.menu.GunViewMenu;
 
 import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
@@ -17,7 +15,6 @@ import net.minecraft.core.BlockPos;
 import java.util.function.Supplier;
 import java.util.HashMap;
 
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class GunViewSlotMessage {
 	private final int slotID, x, y, z, changeType, meta;
 
@@ -48,7 +45,7 @@ public class GunViewSlotMessage {
 		buffer.writeInt(message.meta);
 	}
 
-	public static void handler(GunViewSlotMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
+	public static void handle(GunViewSlotMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
 		context.enqueueWork(() -> {
 			Player entity = context.getSender();
@@ -74,10 +71,5 @@ public class GunViewSlotMessage {
 		if (slot == 0 && changeType == 1) {
 
 		}
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		BluePacket.addNetworkMessage(GunViewSlotMessage.class, GunViewSlotMessage::buffer, GunViewSlotMessage::new, GunViewSlotMessage::handler);
 	}
 }

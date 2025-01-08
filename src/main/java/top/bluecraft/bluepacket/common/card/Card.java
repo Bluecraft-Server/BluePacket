@@ -12,6 +12,8 @@ import top.bluecraft.bluepacket.api.ICard;
 import top.bluecraft.bluepacket.api.IPaginated;
 import top.bluecraft.bluepacket.client.screen.GunViewScreen;
 import top.bluecraft.bluepacket.common.page.Page;
+import top.bluecraft.bluepacket.network.GunViewChangeMessage;
+import top.bluecraft.bluepacket.network.NetworkRegistry;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -177,16 +179,18 @@ public abstract class Card implements ICard, IPaginated {
         // 判断点击左箭头（<）
         if (isMouseOverArrow(mouseX, mouseY, leftArrowX, arrowY)) {
             if (currentPageIndex > 0) {
-                currentPageIndex--; // 切换到前一页
+                currentPageIndex = currentPageIndex-- % getTotalPages(); // 切换到前一页
                 System.out.println("Switched to page: " + currentPageIndex);
+                NetworkRegistry.sendMessage(new GunViewChangeMessage(currentPageIndex, getTotalPages()));
             }
         }
 
         // 判断点击右箭头（>）
         if (isMouseOverArrow(mouseX, mouseY, rightArrowX, arrowY)) {
             if (currentPageIndex < getTotalPages() - 1) {
-                currentPageIndex++; // 切换到下一页
+                currentPageIndex = currentPageIndex++ % getTotalPages(); // 切换到下一页
                 System.out.println("Switched to page: " + currentPageIndex);
+                NetworkRegistry.sendMessage(new GunViewChangeMessage(currentPageIndex, getTotalPages()));
             }
         }
     }

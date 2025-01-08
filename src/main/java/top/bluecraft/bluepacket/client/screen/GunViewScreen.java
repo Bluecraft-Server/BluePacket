@@ -16,7 +16,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.bluepacket.api.ICard;
 import top.bluecraft.bluepacket.client.menu.GunViewMenu;
-import top.bluecraft.bluepacket.common.card.Card;
 import top.bluecraft.bluepacket.common.page.Page;
 
 public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
@@ -25,12 +24,14 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	private final int x, y, z;
 	private final Player entity;
 	private final List<ICard> cards;
-	private int selectedCardIndex = 0;
 	private int currentPageIndex = 0;
+	private int selectedCardIndex = 0;
 	private static final int CARD_WIDTH = 16;
 	private static final int CARD_HEIGHT = 32;
 	private static final int CARDS_PER_ROW = 5;
 	private static final int CARD_SPACING = 4;
+	public static final int IMAGE_WIDTH = 400;
+	public static final int IMAGE_HEIGHT = 200;
 
 	public GunViewScreen(GunViewMenu container, Inventory inventory, Component text, List<ICard> cards) {
 		super(container, inventory, text);
@@ -39,8 +40,8 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		this.y = container.y;
 		this.z = container.z;
 		this.entity = container.entity;
-		this.imageWidth = 400;
-		this.imageHeight = 200;
+		this.imageWidth = IMAGE_WIDTH;
+		this.imageHeight = IMAGE_HEIGHT;
 		this.cards = cards;
 	}
 
@@ -54,15 +55,14 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		// 获取当前选中的卡片和页面
 		ICard currentCard = cards.get(selectedCardIndex);
 		Page currentPage = currentCard.getPage(currentPageIndex);
-
 		// 绘制卡片材质
 		// 示例：假设卡片材质绘制在特定位置
 		int cardX = this.width / 2 - 88;
 		int cardY = this.height / 2 - 16;
         if (this.minecraft != null) {
-            this.minecraft.getTextureManager().bindForSetup(currentCard.resourceLocation());
+            this.minecraft.getTextureManager().bindForSetup(currentCard.resourceLocation().get("background"));
         }
-        guiGraphics.blit(currentCard.resourceLocation(), cardX, cardY, 0, 0, 16, 32, 16, 32);
+        guiGraphics.blit(currentCard.resourceLocation().get("background"), cardX, cardY, 0, 0, 16, 32, 16, 32);
 
 		// 绘制高亮效果（如果是选中的卡片）
 		if (selectedCardIndex == 0) {
@@ -73,8 +73,8 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		// 示例：假设每个物品占用一个固定的槽位，您需要根据实际情况调整绘制逻辑
 		int startX = (this.width - 176) / 2; // 示例起始位置
 		int startY = (this.height - 166) / 2 + 30;
-		for (int i = 0; i < currentPage.getItems().size(); i++) {
-			ItemStack itemStack = currentPage.getItems().get(i);
+		for (int i = 0; i < currentPage.items().size(); i++) {
+			ItemStack itemStack = currentPage.items().get(i);
 			// 绘制物品的方法，您需要根据实际情况实现
 			// drawItemStack(itemStack, startX + (i % 9) * 18, startY + (i / 9) * 18);
 		}

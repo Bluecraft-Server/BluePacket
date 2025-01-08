@@ -1,8 +1,15 @@
 package top.bluecraft.bluepacket.api;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.resources.ResourceLocation;
 import top.bluecraft.bluepacket.common.card.Card;
 import top.bluecraft.bluepacket.common.page.Page;
+
+import java.util.Map;
 
 public interface ICard {
     /**
@@ -26,10 +33,16 @@ public interface ICard {
     /**
      * @return 材质的资源地址
      */
-    ResourceLocation resourceLocation();
+    Map<String, ResourceLocation> resourceLocation();
 
     /**
      * @return Card的名称
      */
     String name();
+
+    void bindAndBlit(Minecraft minecraft, GuiGraphics gui, int x, int y, int width, int height);
+
+    void renderFont(GuiGraphics graphics, Font font, int x, int y);
+
+    void mouseClick(Screen screen, double mouseX, double mouseY);
 }

@@ -25,7 +25,7 @@ public abstract class Card implements ICard, IPaginated {
     /**
      * 一个页面显示的物品数量
      */
-    private static final int ITEMS_PER_PAGE = 110;
+    public static final int ITEMS_PER_PAGE = 110;
     /**
      * Card的物品储存
      */
@@ -165,7 +165,7 @@ public abstract class Card implements ICard, IPaginated {
     }
 
     @Override
-    public void mouseClick(Screen screen, double mouseX, double mouseY) {
+    public void mouseClick(GunViewScreen screen, double mouseX, double mouseY) {
         int x = screen.width / 10 * 9;  // GUI 左上角的 X 坐标
         int y = screen.width / 5;       // GUI 左上角的 Y 坐标
         int width = GunViewScreen.IMAGE_WIDTH;  // GUI 的宽度
@@ -179,19 +179,38 @@ public abstract class Card implements ICard, IPaginated {
         // 判断点击左箭头（<）
         if (isMouseOverArrow(mouseX, mouseY, leftArrowX, arrowY)) {
             if (currentPageIndex > 0) {
-                currentPageIndex = currentPageIndex-- % getTotalPages(); // 切换到前一页
+                currentPageIndex--; // 切换到前一页
                 System.out.println("Switched to page: " + currentPageIndex);
                 NetworkRegistry.sendMessage(new GunViewChangeMessage(currentPageIndex, getTotalPages()));
+                updateViewSlot(screen);
             }
         }
 
         // 判断点击右箭头（>）
         if (isMouseOverArrow(mouseX, mouseY, rightArrowX, arrowY)) {
             if (currentPageIndex < getTotalPages() - 1) {
-                currentPageIndex = currentPageIndex++ % getTotalPages(); // 切换到下一页
+                currentPageIndex++; // 切换到下一页
                 System.out.println("Switched to page: " + currentPageIndex);
                 NetworkRegistry.sendMessage(new GunViewChangeMessage(currentPageIndex, getTotalPages()));
+                updateViewSlot(screen);
             }
+        }
+    }
+
+    private void updateViewSlot(GunViewScreen screen) {
+        // 获取当前页面的物品
+        Page currentPage = getPage(currentPageIndex);
+        List<ItemStack> items = currentPage.items();
+
+        // 遍历所有物品并更新到槽位
+        for (int i = 0; i < Math.min(items.size(), Card.ITEMS_PER_PAGE); i++) {
+            ItemStack itemStack = items.get(i);
+
+            // 通过 i 来映射物品到不同的槽
+            // 这里假设每个物品对应一个槽位
+
+            // 更新物品槽
+            screen.menu.setItem(i, screen.menu.getStateId(), itemStack); // 更新物品槽
         }
     }
 

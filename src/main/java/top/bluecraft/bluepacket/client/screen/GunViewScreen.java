@@ -24,16 +24,15 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	private final int x, y, z;
 	private final Player entity;
 	private final List<ICard> cards;
-	private int currentPageIndex = 0;
-	private int selectedCardIndex = 0;
 	private static final int CARD_WIDTH = 16;
 	private static final int CARD_HEIGHT = 32;
 	private static final int CARDS_PER_ROW = 5;
 	private static final int CARD_SPACING = 4;
 	public static final int IMAGE_WIDTH = 400;
 	public static final int IMAGE_HEIGHT = 200;
+	public final GunViewMenu menu = this.getMenu();
 
-	public GunViewScreen(GunViewMenu container, Inventory inventory, Component text, List<ICard> cards) {
+	public GunViewScreen(GunViewMenu container, Inventory inventory, Component text) {
 		super(container, inventory, text);
 		this.world = container.world;
 		this.x = container.x;
@@ -42,7 +41,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		this.entity = container.entity;
 		this.imageWidth = IMAGE_WIDTH;
 		this.imageHeight = IMAGE_HEIGHT;
-		this.cards = cards;
+		this.cards = container.cards;
 	}
 
 	private static final ResourceLocation texture = new ResourceLocation("bluepacket:textures/screens/gun_view.png");
@@ -53,8 +52,8 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 		// 获取当前选中的卡片和页面
-		ICard currentCard = cards.get(selectedCardIndex);
-		Page currentPage = currentCard.getPage(currentPageIndex);
+		ICard currentCard = cards.get(menu.selectedCardIndex);
+		Page currentPage = currentCard.getPage(menu.currentPageIndex);
 		// 绘制卡片材质
 		// 示例：假设卡片材质绘制在特定位置
 		int cardX = this.width / 2 - 88;
@@ -65,7 +64,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
         guiGraphics.blit(currentCard.resourceLocation().get("background"), cardX, cardY, 0, 0, 16, 32, 16, 32);
 
 		// 绘制高亮效果（如果是选中的卡片）
-		if (selectedCardIndex == 0) {
+		if (menu.selectedCardIndex == 0) {
 			guiGraphics.fill(x - 2, y - 2, x + CARD_WIDTH + 2, y + CARD_HEIGHT + 2, 0xFFFFFF00);
 		}
 
@@ -80,7 +79,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		}
 
 		// 绘制页码信息
-		String pageInfo = "Page " + (currentPageIndex + 1) + " / " + currentCard.getTotalPages();
+		String pageInfo = "Page " + (menu.currentPageIndex + 1) + " / " + currentCard.getTotalPages();
 		guiGraphics.drawCenteredString(this.font, pageInfo, this.width / 2, this.height - 40, 0xFFFFFF);
 	}
 
@@ -113,7 +112,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (button == 0) { // 左键点击
-			ICard currentCard = cards.get(selectedCardIndex);
+			ICard currentCard = cards.get(menu.selectedCardIndex);
 			int startX = (this.width - (CARDS_PER_ROW * (CARD_WIDTH + CARD_SPACING) - CARD_SPACING)) / 2;
 			int startY = 50;
 
@@ -122,11 +121,13 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 				int y = startY + (i / CARDS_PER_ROW) * (CARD_HEIGHT + CARD_SPACING);
 
 				if (mouseX >= x && mouseX <= x + CARD_WIDTH && mouseY >= y && mouseY <= y + CARD_HEIGHT) {
-					selectedCardIndex = i;
-					currentPageIndex = 1; // 切换卡片时重置为第一页
+					menu.selectedCardIndex = i;
+					menu.currentPageIndex = 1; // 切换卡片时重置为第一页
 					return true;
 				}
 			}
+
+			currentCard.mouseClick(this, mouseX, mouseY);
 		}
 		return super.mouseClicked(mouseX, mouseY, button);
 	}

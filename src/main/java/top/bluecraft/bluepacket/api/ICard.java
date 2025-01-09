@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.resources.ResourceLocation;
+import top.bluecraft.bluepacket.client.screen.GunViewScreen;
 import top.bluecraft.bluepacket.common.card.Card;
 import top.bluecraft.bluepacket.common.page.Page;
 
@@ -44,5 +45,5 @@ public interface ICard {
 
     void renderFont(GuiGraphics graphics, Font font, int x, int y);
 
-    void mouseClick(Screen screen, double mouseX, double mouseY);
+    void mouseClick(GunViewScreen screen, double mouseX, double mouseY);
 }

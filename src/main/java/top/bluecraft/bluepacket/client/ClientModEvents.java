@@ -18,9 +18,7 @@ public class ClientModEvents {
         @SubscribeEvent
         public static void clientLoad(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {
-                MenuScreens.register(MenuRegistration.GUN_VIEW_MENU.get(),
-                        (menu, inventory, component)
-                                -> new GunViewScreen(menu, inventory, component, CardUtil.createCards()));
+                MenuScreens.register(MenuRegistration.GUN_VIEW_MENU.get(), GunViewScreen::new);
             });
         }
 }

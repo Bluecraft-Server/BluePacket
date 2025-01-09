@@ -1,5 +1,6 @@
 package top.bluecraft.bluepacket.client.menu;
 
+import net.minecraft.world.inventory.ClickType;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
@@ -18,9 +19,15 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.core.BlockPos;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.bluepacket.BluePacket;
+import top.bluecraft.bluepacket.api.ICard;
+import top.bluecraft.bluepacket.client.menu.slot.WeaponViewSlot;
+import top.bluecraft.bluepacket.common.card.Card;
+import top.bluecraft.bluepacket.common.page.Page;
 import top.bluecraft.bluepacket.init.MenuRegistration;
 import top.bluecraft.bluepacket.network.GunViewSlotMessage;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.Map;
 import java.util.HashMap;
@@ -37,12 +44,18 @@ public class GunViewMenu extends AbstractContainerMenu{
     private Supplier<Boolean> boundItemMatcher = null;
     private Entity boundEntity = null;
     private BlockEntity boundBlockEntity = null;
+    public final List<ICard> cards;
+    public int currentPageIndex = 0;
+    public int selectedCardIndex = 0;
+    private ICard currentCard;
+    private Page currentPage;
 
-    public GunViewMenu(int id, Inventory inv, FriendlyByteBuf extraData) {
+    public GunViewMenu(int id, Inventory inv, FriendlyByteBuf extraData, List<ICard> cards) {
         super(MenuRegistration.GUN_VIEW_MENU.get(), id);
         this.entity = inv.player;
         this.world = inv.player.level();
         this.internal = new ItemStackHandler(5);
+        this.cards = cards;
         BlockPos pos = null;
         if (extraData != null) {
             pos = extraData.readBlockPos();
@@ -77,26 +90,36 @@ public class GunViewMenu extends AbstractContainerMenu{
                     });
             }
         }
-        for (int si = 0; si < 10; ++si) {
-            for (int sj = 0; sj < 11; ++sj) {
-                int slotID = sj + (si + 1) * 19;
-                this.addSlot(new Slot(inv, slotID, 14 + sj * 18,  14 + si * 18){
-                    @Override
-                    public boolean mayPickup(@NotNull Player pPlayer) {
-                        return false;
-                    }
+        ICard currentCard = cards.get(selectedCardIndex);
+        Page currentPage = currentCard.getPage(currentPageIndex);
 
-                    @Override
-                    public boolean mayPlace(@NotNull ItemStack pStack) {
-                        return false;
-                    }
+// 获取当前页面的物品列表
+        List<ItemStack> items = currentPage.items();
+        int itemIndex = 0;  // 用于遍历 items 列表的索引
 
-                    @Override
-                    public void onTake(@NotNull Player pPlayer, @NotNull ItemStack pStack) {
-                        super.onTake(pPlayer, pStack);
-                        slotChanged(slotID, 1, 0);
-                    }
-                });
+// 最大的物品槽数量 10x11 = 110
+        int maxSlots = 10 * 11;
+
+        for (int si = 0; si < 10; ++si) {  // 行
+            for (int sj = 0; sj < 11; ++sj) {  // 列
+                // 确保我们不会创建超出最大物品槽数量的槽
+                if (itemIndex >= items.size()) {
+                    break;
+                }
+
+                ItemStack itemStack = items.get(itemIndex);  // 获取当前物品
+                // 添加物品槽
+                this.addSlot(new WeaponViewSlot(
+                        inv,
+                        itemIndex,  // 使用物品索引作为 sz 或 slotId
+                        14 + sj * 18,  // X 坐标
+                        14 + si * 18,  // Y 坐标
+                        world,
+                        entity,
+                        itemStack,
+                        x, y, z
+                ));
+                itemIndex++;  // 增加索引
             }
         }
         for (int si = 0; si < 3; ++si)
@@ -248,8 +271,13 @@ public class GunViewMenu extends AbstractContainerMenu{
             BluePacket.PACKET_HANDLER.sendToServer(new GunViewSlotMessage(slotid, x, y, z, ctype, meta));
             GunViewSlotMessage.handleSlotAction(entity, slotid, ctype, meta, x, y, z);
         }
+
     }
 
+    @Override
+    public void clicked(int pSlotId, int pButton, ClickType pClickType, Player pPlayer) {
+        super.clicked(pSlotId, pButton, pClickType, pPlayer);
+    }
 }
 
 

@@ -54,7 +54,7 @@ public class GeneralTerminalInventoryCapability implements ICapabilitySerializab
 	}
 
 	private ItemStackHandler createItemHandler() {
-		return new ItemStackHandler(100) {
+		return new ItemStackHandler(5000) {
 			@Override
 			public int getSlotLimit(int slot) {
 				return 64;

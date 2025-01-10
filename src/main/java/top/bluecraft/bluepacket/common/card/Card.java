@@ -3,7 +3,6 @@ package top.bluecraft.bluepacket.common.card;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
@@ -12,8 +11,6 @@ import top.bluecraft.bluepacket.api.ICard;
 import top.bluecraft.bluepacket.api.IPaginated;
 import top.bluecraft.bluepacket.client.screen.GunViewScreen;
 import top.bluecraft.bluepacket.common.page.Page;
-import top.bluecraft.bluepacket.network.GunViewChangeMessage;
-import top.bluecraft.bluepacket.network.NetworkRegistry;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -146,7 +143,6 @@ public abstract class Card implements ICard, IPaginated {
         }
         gui.blit(backgroundResourceLocation(), x, y, 0, 0, width, height, width, height);
         gui.blit(texturesResourceLocation, x, y, 0, 0, width, height, width, height);
-
     }
     @Override
     public void renderFont(GuiGraphics graphics, Font font, int x, int y) {
@@ -181,7 +177,6 @@ public abstract class Card implements ICard, IPaginated {
             if (currentPageIndex > 0) {
                 currentPageIndex--; // 切换到前一页
                 System.out.println("Switched to page: " + currentPageIndex);
-                NetworkRegistry.sendMessage(new GunViewChangeMessage(currentPageIndex, getTotalPages()));
                 updateViewSlot(screen);
             }
         }
@@ -191,7 +186,6 @@ public abstract class Card implements ICard, IPaginated {
             if (currentPageIndex < getTotalPages() - 1) {
                 currentPageIndex++; // 切换到下一页
                 System.out.println("Switched to page: " + currentPageIndex);
-                NetworkRegistry.sendMessage(new GunViewChangeMessage(currentPageIndex, getTotalPages()));
                 updateViewSlot(screen);
             }
         }

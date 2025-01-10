@@ -52,35 +52,22 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 		// 获取当前选中的卡片和页面
-		ICard currentCard = cards.get(menu.selectedCardIndex);
-		Page currentPage = currentCard.getPage(menu.currentPageIndex);
+		ICard currentCard = this.menu.currentCard;
+		Page currentPage = this.menu.currentPage;
 		// 绘制卡片材质
 		// 示例：假设卡片材质绘制在特定位置
 		int cardX = this.width / 2 - 88;
 		int cardY = this.height / 2 - 16;
         if (this.minecraft != null) {
-            this.minecraft.getTextureManager().bindForSetup(currentCard.resourceLocation().get("background"));
+            currentCard.bindAndBlit(minecraft, guiGraphics, cardX, cardY, 32, 16);
         }
-        guiGraphics.blit(currentCard.resourceLocation().get("background"), cardX, cardY, 0, 0, 16, 32, 16, 32);
 
 		// 绘制高亮效果（如果是选中的卡片）
 		if (menu.selectedCardIndex == 0) {
 			guiGraphics.fill(x - 2, y - 2, x + CARD_WIDTH + 2, y + CARD_HEIGHT + 2, 0xFFFFFF00);
 		}
 
-		// 绘制页面上的物品
-		// 示例：假设每个物品占用一个固定的槽位，您需要根据实际情况调整绘制逻辑
-		int startX = (this.width - 176) / 2; // 示例起始位置
-		int startY = (this.height - 166) / 2 + 30;
-		for (int i = 0; i < currentPage.items().size(); i++) {
-			ItemStack itemStack = currentPage.items().get(i);
-			// 绘制物品的方法，您需要根据实际情况实现
-			// drawItemStack(itemStack, startX + (i % 9) * 18, startY + (i / 9) * 18);
-		}
-
-		// 绘制页码信息
-		String pageInfo = "Page " + (menu.currentPageIndex + 1) + " / " + currentCard.getTotalPages();
-		guiGraphics.drawCenteredString(this.font, pageInfo, this.width / 2, this.height - 40, 0xFFFFFF);
+		currentCard.renderFont(guiGraphics, font, this.width / 2 , this.height - 40);
 	}
 
 	@Override

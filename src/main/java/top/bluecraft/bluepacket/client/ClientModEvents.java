@@ -5,10 +5,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import top.bluecraft.bluepacket.api.ICard;
 import top.bluecraft.bluepacket.client.screen.GunViewScreen;
-import top.bluecraft.bluepacket.common.card.Card;
-import top.bluecraft.bluepacket.common.card.CardUtil;
 import top.bluecraft.bluepacket.init.MenuRegistration;
 
 

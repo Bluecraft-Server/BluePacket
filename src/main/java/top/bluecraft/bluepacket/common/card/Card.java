@@ -6,7 +6,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import top.bluecraft.bluepacket.BluePacket;
 import top.bluecraft.bluepacket.api.ICard;
@@ -144,10 +143,10 @@ public abstract class Card implements ICard {
 
         // 渲染箭头（如果可用）
         if (currentPageIndex > 0) {
-            graphics.drawCenteredString(font, ARROW_LEFT, centerX - ARROW_SPACING, y, PAGE_INFO_COLOR);
+            graphics.drawCenteredString(font, ARROW_LEFT, centerX - ARROW_SPACING, y + 15, PAGE_INFO_COLOR);
         }
         if (currentPageIndex < getTotalPages() - 1) {
-            graphics.drawCenteredString(font, ARROW_RIGHT, centerX + ARROW_SPACING, y, PAGE_INFO_COLOR);
+            graphics.drawCenteredString(font, ARROW_RIGHT, centerX + ARROW_SPACING, y + 15, PAGE_INFO_COLOR);
         }
     }
 
@@ -167,6 +166,11 @@ public abstract class Card implements ICard {
         double halfSize = ARROW_HITBOX_SIZE / 2.0;
         return mouseX >= arrowX - halfSize && mouseX <= arrowX + halfSize &&
                 mouseY >= arrowY - halfSize && mouseY <= arrowY + halfSize;
+    }
+
+    @Override
+    public ICardInventory getInventory() {
+        return inventory;
     }
 }
 

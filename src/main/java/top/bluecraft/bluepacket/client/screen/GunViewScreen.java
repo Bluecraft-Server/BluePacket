@@ -1,5 +1,6 @@
 package top.bluecraft.bluepacket.client.screen;
 
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
@@ -31,6 +32,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	private static final int INVENTORY_LABEL_Y = 98;  // 物品栏标签Y坐标
 	private static final int CARD_NAME_X = 14;        // 卡片名称X坐标
 	private static final int CARD_NAME_Y = 5;         // 卡片名称Y坐标
+	private Button configButton;
 
 	// 资源位置
 	private static final ResourceLocation TEXTURE = new ResourceLocation("bluepacket:textures/gui/gun_view.png");
@@ -152,6 +154,24 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		return false;
 	}
 
+	@Override
+	protected void init() {
+		super.init();
+		// 添加配置按钮
+		if (hasConfigPermission()) {
+			this.configButton = Button.builder(Component.translatable("gui.bluepacket.config"), (button) -> {
+						if (minecraft != null) {
+							minecraft.setScreen(new CardConfigScreen(this));
+						}
+					})
+					.pos(leftPos, topPos - 20)  // 设置按钮位置
+					.size(40, 20)  // 设置按钮大小
+					.build();
+
+			this.addRenderableWidget(configButton);
+		}
+	}
+
 	private boolean isMouseOverCard(double mouseX, double mouseY, int cardX, int cardY) {
 		return mouseX >= cardX && mouseX < cardX + CARD_WIDTH &&
 				mouseY >= cardY && mouseY < cardY + CARD_HEIGHT;
@@ -217,12 +237,17 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 				4210752);
 	}
 
+	private boolean hasConfigPermission() {
+		if (minecraft == null || minecraft.player == null) return false;
+		return minecraft.player.hasPermissions(2);
+	}
+
 	private int getCardStartX() {
-		return this.width / 2;
+		return leftPos + 42;
 	}
 
 	private int getCardStartY() {
-		return this.height / 4;
+		return topPos - 16;
 	}
 
 	// Getter方法

@@ -31,7 +31,7 @@ public class GunViewMenu extends AbstractContainerMenu {
     private static final int PLAYER_INV_START_X = 220;
     private static final int PLAYER_INV_START_Y = 111;
     private static final int HOTBAR_START_Y = 169;
-    private static final int GRID_START_INDEX = 37;
+    private static final int GRID_START_INDEX = 0;
     private static final int SLOT_SIZE = 110; // 11 * 10
     private static final int GRID_END_INDEX = GRID_START_INDEX + SLOT_SIZE - 1;
     private final Map<String, ICardInventory> cardInventories = new HashMap<>();
@@ -131,14 +131,14 @@ public class GunViewMenu extends AbstractContainerMenu {
     }
 
     private void setupGridSlots() {
-        int slotCount = 37;
+        int slotCount = 0;
         for (int row = 0; row < GRID_ROWS && slotCount < SLOT_SIZE; row++) {
             for (int col = 0; col < GRID_COLS && slotCount < SLOT_SIZE; col++) {
-                final int slotIndex = GRID_START_INDEX + slotCount;
+                // 直接使用slotCount作为索引
                 int xPos = GRID_START_X + col * SLOT_SPACING;
                 int yPos = GRID_START_Y + row * SLOT_SPACING;
 
-                this.addSlot(new GunViewSlot(itemHandler, slotIndex, xPos, yPos, this));
+                this.addSlot(new GunViewSlot(itemHandler, slotCount, xPos, yPos, this));
                 slotCount++;
             }
         }

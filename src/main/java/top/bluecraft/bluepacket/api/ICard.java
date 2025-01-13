@@ -45,5 +45,7 @@ public interface ICard {
      * 处理鼠标点击
      */
     void handleMouseClick(double mouseX, double mouseY, int centerX, int y);
+
+    ICardInventory getInventory();
 }
 

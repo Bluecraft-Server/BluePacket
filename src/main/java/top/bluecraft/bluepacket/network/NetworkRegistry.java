@@ -9,8 +9,9 @@ import top.bluecraft.bluepacket.BluePacket;
 public class NetworkRegistry {
     @SubscribeEvent
     public static void registerMessage(FMLCommonSetupEvent event) {
-        BluePacket.addNetworkMessage(GunViewChangeMessage.class, GunViewChangeMessage::buffer, GunViewChangeMessage::new, GunViewChangeMessage::handle);
+        BluePacket.addNetworkMessage(GunViewChangeMessage.class, GunViewChangeMessage::encode, GunViewChangeMessage::decode, GunViewChangeMessage::handle);
         BluePacket.addNetworkMessage(ClientboundCardSelectionPacket.class, ClientboundCardSelectionPacket::encode, ClientboundCardSelectionPacket::decode, ClientboundCardSelectionPacket.Handler::handle);
         BluePacket.addNetworkMessage(CardSelectionMessage.class, CardSelectionMessage::encode, CardSelectionMessage::decode, CardSelectionMessage.Handler::handle);
+        BluePacket.addNetworkMessage(AddItemToCardMessage.class, AddItemToCardMessage::encode, AddItemToCardMessage::decode, AddItemToCardMessage.Handler::handle);
     }
 }

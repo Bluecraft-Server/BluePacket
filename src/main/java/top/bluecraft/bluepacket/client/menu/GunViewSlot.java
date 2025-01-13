@@ -5,8 +5,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.SlotItemHandler;
 import org.jetbrains.annotations.NotNull;
-import top.bluecraft.bluepacket.BluePacket;
-import top.bluecraft.bluepacket.network.GunViewChangeMessage;
 
 public class GunViewSlot extends SlotItemHandler {
     private final GunViewMenu menu;
@@ -29,14 +27,5 @@ public class GunViewSlot extends SlotItemHandler {
     @Override
     public void onTake(@NotNull Player player, @NotNull ItemStack stack) {
         super.onTake(player, stack);
-        if (menu.world.isClientSide() && menu.currentCard != null) {
-            BluePacket.PACKET_HANDLER.sendToServer(
-                    new GunViewChangeMessage(menu.currentPageIndex,
-                            menu.currentCard.getTotalPages(),
-                            getSlotIndex(),
-                            menu.x, menu.y, menu.z,
-                            1, 0)
-            );
-        }
     }
 }

@@ -70,4 +70,5 @@ public class CardInventoryCapability implements ICardInventory {
             inventory.setStackInSlot(i, ItemStack.EMPTY);
         }
     }
+
 }

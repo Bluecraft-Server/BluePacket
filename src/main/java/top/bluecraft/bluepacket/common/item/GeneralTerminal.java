@@ -1,24 +1,17 @@
 package top.bluecraft.bluepacket.common.item;
 
-import io.netty.buffer.Unpooled;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.*;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import top.bluecraft.bluepacket.BluePacket;
 import top.bluecraft.bluepacket.client.menu.GunViewMenu;
-import top.bluecraft.bluepacket.common.item.inventory.GeneralTerminalInventoryCapability;
 
 public class GeneralTerminal extends Item {
     public GeneralTerminal() {
@@ -26,46 +19,52 @@ public class GeneralTerminal extends Item {
     }
 
     @Override
-    public ICapabilityProvider initCapabilities(ItemStack stack, CompoundTag compound) {
-        return new GeneralTerminalInventoryCapability();
+    public @Nullable CompoundTag getShareTag(ItemStack stack) {
+        CompoundTag tag = super.getShareTag(stack);
+        if (tag == null) {
+            tag = new CompoundTag();
+        }
+
+        // 获取或创建菜单标签
+        CompoundTag menuTag = tag.getCompound("MenuData");
+
+        // 如果玩家正在使用这个物品且打开了菜单
+        if (stack.getEntityRepresentation() instanceof Player player &&
+                player.containerMenu instanceof GunViewMenu menu) {
+            // 保存物品栏数据
+            menuTag.put("Inventories", menu.saveInventories());
+        }
+
+        tag.put("MenuData", menuTag);
+        return tag;
     }
 
     @Override
-    public CompoundTag getShareTag(ItemStack stack) {
-        CompoundTag nbt = stack.getOrCreateTag();
-        stack.getCapability(ForgeCapabilities.ITEM_HANDLER, null).ifPresent(capability -> nbt.put("Inventory", ((ItemStackHandler) capability).serializeNBT()));
-        return nbt;
-    }
+    public void readShareTag(ItemStack stack, @Nullable CompoundTag tag) {
+        super.readShareTag(stack, tag);
+        if (tag != null && tag.contains("MenuData")) {
+            CompoundTag menuTag = tag.getCompound("MenuData");
 
-    @Override
-    public void readShareTag(ItemStack stack,  CompoundTag nbt) {
-        super.readShareTag(stack, nbt);
-        if (nbt != null)
-            stack.getCapability(ForgeCapabilities.ITEM_HANDLER, null).ifPresent(capability -> ((ItemStackHandler) capability).deserializeNBT((CompoundTag) nbt.get("Inventory")));
+            // 如果玩家正在使用这个物品且打开了菜单
+            if (stack.getEntityRepresentation() instanceof Player player &&
+                    player.containerMenu instanceof GunViewMenu menu) {
+                // 加载物品栏数据
+                if (menuTag.contains("Inventories")) {
+                    menu.loadInventories(menuTag.getCompound("Inventories"));
+                }
+            }
+        }
     }
 
     @Override
     public @NotNull InteractionResultHolder<ItemStack> use(@NotNull Level world, @NotNull Player entity, @NotNull InteractionHand hand) {
-        InteractionResultHolder<ItemStack> ar = super.use(world, entity, hand);
-        if (entity instanceof ServerPlayer serverPlayer) {
-            NetworkHooks.openScreen(serverPlayer, new MenuProvider() {
-                @Override
-                public @NotNull Component getDisplayName() {
-                    return Component.literal("General Terminal");
-                }
+        ItemStack itemstack = entity.getItemInHand(hand);
 
-                @Override
-                public AbstractContainerMenu createMenu(int id, @NotNull Inventory inventory, @NotNull Player player) {
-                    FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
-                    packetBuffer.writeBlockPos(entity.blockPosition());
-                    packetBuffer.writeByte(hand == InteractionHand.MAIN_HAND ? 0 : 1);
-                    return new GunViewMenu(id, inventory, packetBuffer);
-                }
-            }, buf -> {
-                buf.writeBlockPos(entity.blockPosition());
-                buf.writeByte(hand == InteractionHand.MAIN_HAND ? 0 : 1);
-            });
+        if (!world.isClientSide && entity instanceof ServerPlayer serverPlayer) {
+            NetworkHooks.openScreen(serverPlayer, new TerminalProvider(itemstack));
+            BluePacket.LOGGER.info("[BluePacket] Opened server screen");
         }
-        return ar;
+
+        return InteractionResultHolder.success(itemstack);
     }
 }

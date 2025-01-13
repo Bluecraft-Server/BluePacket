@@ -1,271 +1,230 @@
 package top.bluecraft.bluepacket.client.menu;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.items.ItemStackHandler;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.core.BlockPos;
+import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.bluepacket.BluePacket;
 import top.bluecraft.bluepacket.api.ICard;
-import top.bluecraft.bluepacket.client.menu.slot.WeaponViewSlot;
+import top.bluecraft.bluepacket.api.ICardInventory;
+import top.bluecraft.bluepacket.common.capability.CardInventoryCapability;
 import top.bluecraft.bluepacket.common.card.GeneralCard;
 import top.bluecraft.bluepacket.common.page.Page;
 import top.bluecraft.bluepacket.init.MenuRegistration;
 
 import java.util.*;
-import java.util.function.Supplier;
 
-public class GunViewMenu extends AbstractContainerMenu{
-    public final static HashMap<String, Object> guistate = new HashMap<>();
+public class GunViewMenu extends AbstractContainerMenu {
+    // 常量定义
+    private static final int GRID_ROWS = 11;
+    private static final int GRID_COLS = 10;
+    private static final int GRID_START_X = 14;
+    private static final int GRID_START_Y = 14;
+    private static final int SLOT_SPACING = 18;
+    private static final int PLAYER_INV_START_X = 220;
+    private static final int PLAYER_INV_START_Y = 111;
+    private static final int HOTBAR_START_Y = 169;
+    private static final int GRID_START_INDEX = 37;
+    private static final int SLOT_SIZE = 110; // 11 * 10
+    private static final int GRID_END_INDEX = GRID_START_INDEX + SLOT_SIZE - 1;
+    private final Map<String, ICardInventory> cardInventories = new HashMap<>();
+    public static final ICardInventory MAIN_WEAPON_INV = new CardInventoryCapability(1100);
+
+    // 游戏状态
     public final Level world;
     public final Player entity;
     public int x, y, z;
-    private ContainerLevelAccess access = ContainerLevelAccess.NULL;
-    private IItemHandler internal;
-    private final Map<Integer, Slot> customSlots = new HashMap<>();
-    private boolean bound = false;
-    private Supplier<Boolean> boundItemMatcher = null;
-    private Entity boundEntity = null;
-    private BlockEntity boundBlockEntity = null;
     public final List<ICard> cards;
     public int currentPageIndex = 0;
     public int selectedCardIndex = 0;
-    public final ICard currentCard;
-    public final Page currentPage;
+    public ICard currentCard;
+
+    // 物品管理
     public final Inventory inventory;
+    private final ItemStackHandler itemHandler;
 
-    public GunViewMenu(int id, Inventory inv, FriendlyByteBuf extraData) {
+    public GunViewMenu(int id, Inventory playerInventory) {
         super(MenuRegistration.GUN_VIEW_MENU.get(), id);
-        cards = new ArrayList<>();
-        this.entity = inv.player;
-        this.world = inv.player.level();
-        this.inventory = inv;
-        this.internal = new ItemStackHandler(5000);
-        final ICard MAIN_WEAPON_CARD = new GeneralCard(inventory, new ResourceLocation(BluePacket.MODID, "textures/gui/main_weapon.png"), "main_weapon");
-        this.cards.add(MAIN_WEAPON_CARD);
-        System.out.println("Card list initialized: " + this.cards.size());
-        BlockPos pos = null;
-        currentCard = this.cards.get(selectedCardIndex);
-        currentPage = currentCard.getPage(currentPageIndex);
-        if (extraData != null) {
-            pos = extraData.readBlockPos();
-            this.x = pos.getX();
-            this.y = pos.getY();
-            this.z = pos.getZ();
-            access = ContainerLevelAccess.create(world, pos);
-        }
-        if (pos != null) {
-            if (extraData.readableBytes() == 1) { // bound to item
-                byte hand = extraData.readByte();
-                ItemStack itemstack = hand == 0 ? this.entity.getMainHandItem() : this.entity.getOffhandItem();
-                this.boundItemMatcher = () -> itemstack == (hand == 0 ? this.entity.getMainHandItem() : this.entity.getOffhandItem());
-                itemstack.getCapability(ForgeCapabilities.ITEM_HANDLER, null).ifPresent(capability -> {
-                    this.internal = capability;
-                    this.bound = true;
-                });
-            } else if (extraData.readableBytes() > 1) { // bound to entity
-                extraData.readByte(); // drop padding
-                boundEntity = world.getEntity(extraData.readVarInt());
-                if (boundEntity != null)
-                    boundEntity.getCapability(ForgeCapabilities.ITEM_HANDLER, null).ifPresent(capability -> {
-                        this.internal = capability;
-                        this.bound = true;
-                    });
-            } else { // might be bound to block
-                boundBlockEntity = this.world.getBlockEntity(pos);
-                if (boundBlockEntity != null)
-                    boundBlockEntity.getCapability(ForgeCapabilities.ITEM_HANDLER, null).ifPresent(capability -> {
-                        this.internal = capability;
-                        this.bound = true;
-                    });
+
+        // 初始化基本属性
+        this.entity = playerInventory.player;
+        this.world = entity.level();
+        this.inventory = playerInventory;
+
+        // 初始化位置信息
+        BlockPos pos = playerInventory.player.blockPosition();
+        this.x = pos.getX();
+        this.y = pos.getY();
+        this.z = pos.getZ();
+
+        // 初始化物品处理器，使用完整大小以匹配槽位索引
+        this.itemHandler = new ItemStackHandler(14700) {
+            @Override
+            public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+                return slot >= GRID_START_INDEX && slot < GRID_END_INDEX + 1;
             }
-        }
 
-// 获取当前页面的物品列表
-        List<ItemStack> items = currentPage.items();
-        int itemIndex = 0;  // 用于遍历 items 列表的索引
-
-// 最大的物品槽数量 10x11 = 110
-        int maxSlots = 10 * 11;
-
-        for (int si = 0; si < 10; ++si) {  // 行
-            for (int sj = 0; sj < 11; ++sj) {  // 列
-                // 确保我们不会创建超出最大物品槽数量的槽
-                if (itemIndex >= items.size()) {
-                    break;
+            @Override
+            protected void onContentsChanged(int slot) {
+                super.onContentsChanged(slot);
+                if (slot >= GRID_START_INDEX && slot <= GRID_END_INDEX) {
+                    broadcastChanges();
                 }
+            }
+        };
 
-                ItemStack itemStack = items.get(itemIndex);  // 获取当前物品
-                // 添加物品槽
-                this.addSlot(new WeaponViewSlot(
-                        this,
-                        itemIndex,  // 使用物品索引作为 sz 或 slotId
-                        14 + sj * 18,  // X 坐标
-                        14 + si * 18,  // Y 坐标
-                        world,
-                        entity,
-                        itemStack,
-                        x, y, z
-                ));
-                itemIndex++;  // 增加索引
+        // 初始化卡片系统
+        this.cards = initializeCards();
+        this.currentCard = !cards.isEmpty() ? cards.get(0) : null;
+
+        // 设置槽位
+        setupGridSlots();
+        setupPlayerInventorySlots(playerInventory);
+
+        // 初始化第一页物品
+        if (currentCard != null) {
+            loadCurrentPage();
+        }
+    }
+
+    private List<ICard> initializeCards() {
+        List<ICard> cardList = new ArrayList<>();
+
+        cardInventories.put("main_weapon", MAIN_WEAPON_INV);
+
+        cardList.add(new GeneralCard(MAIN_WEAPON_INV, "main_weapon",
+                new ResourceLocation(BluePacket.MODID, "textures/gui/main_weapon.png"),
+                this::onPageChanged));
+        return cardList;
+    }
+
+    // 保存数据
+    public CompoundTag saveInventories() {
+        CompoundTag tag = new CompoundTag();
+        cardInventories.forEach((name, inv) -> {
+            tag.put(name, inv.serializeNBT());
+        });
+        return tag;
+    }
+
+    // 加载数据
+    public void loadInventories(CompoundTag tag) {
+        cardInventories.forEach((name, inv) -> {
+            if (tag.contains(name)) {
+                inv.deserializeNBT(tag.getCompound(name));
+            }
+        });
+    }
+
+    private void onPageChanged(int newPageIndex) {
+        if (currentCard != null && newPageIndex >= 0 && newPageIndex < currentCard.getTotalPages()) {
+            currentPageIndex = newPageIndex;
+            loadCurrentPage();
+        }
+    }
+
+    private void setupGridSlots() {
+        int slotCount = 37;
+        for (int row = 0; row < GRID_ROWS && slotCount < SLOT_SIZE; row++) {
+            for (int col = 0; col < GRID_COLS && slotCount < SLOT_SIZE; col++) {
+                final int slotIndex = GRID_START_INDEX + slotCount;
+                int xPos = GRID_START_X + col * SLOT_SPACING;
+                int yPos = GRID_START_Y + row * SLOT_SPACING;
+
+                this.addSlot(new GunViewSlot(itemHandler, slotIndex, xPos, yPos, this));
+                slotCount++;
             }
         }
-        for (int si = 0; si < 3; ++si)
-            for (int sj = 0; sj < 9; ++sj)
-                this.addSlot(new Slot(inv, sj + (si + 1) * 9, 212 + 8 + sj * 18, 27 + 84 + si * 18));
-        for (int si = 0; si < 9; ++si)
-            this.addSlot(new Slot(inv, si, 212 + 8 + si * 18, 27 + 142));
+    }
+
+    private void setupPlayerInventorySlots(Inventory playerInventory) {
+        // 添加主物品栏槽位（3行9列）
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                this.addSlot(new Slot(playerInventory,
+                        col + (row + 1) * 9,
+                        PLAYER_INV_START_X + col * SLOT_SPACING,
+                        PLAYER_INV_START_Y + row * SLOT_SPACING));
+            }
+        }
+
+        // 添加快捷栏槽位（1行9列）
+        for (int col = 0; col < 9; col++) {
+            this.addSlot(new Slot(playerInventory,
+                    col,
+                    PLAYER_INV_START_X + col * SLOT_SPACING,
+                    HOTBAR_START_Y));
+        }
+    }
+
+    public void loadCurrentPage() {
+        if (currentCard == null) return;
+
+        Page page = currentCard.getPage(currentPageIndex);
+        List<ItemStack> items = page.items();
+
+        // 更新槽位，考虑偏移量
+        for (int i = 0; i < Math.min(items.size(), SLOT_SIZE); i++) {
+            itemHandler.setStackInSlot(i + GRID_START_INDEX, items.get(i).copy());
+        }
+
+        // 清空剩余槽位
+        for (int i = items.size(); i < SLOT_SIZE; i++) {
+            itemHandler.setStackInSlot(i + GRID_START_INDEX, ItemStack.EMPTY);
+        }
+
+        broadcastChanges();
+    }
+
+    public void selectCard(int index) {
+        if (index >= 0 && index < cards.size() && index != selectedCardIndex) {
+            selectedCardIndex = index;
+            currentCard = cards.get(index);
+            currentPageIndex = 0;
+            loadCurrentPage();
+        }
     }
 
     @Override
     public boolean stillValid(@NotNull Player player) {
-        if (this.bound) {
-            if (this.boundItemMatcher != null)
-                return this.boundItemMatcher.get();
-            else if (this.boundBlockEntity != null)
-                return AbstractContainerMenu.stillValid(this.access, player, this.boundBlockEntity.getBlockState().getBlock());
-            else if (this.boundEntity != null)
-                return this.boundEntity.isAlive();
-        }
         return true;
     }
 
     @Override
-    public @NotNull ItemStack quickMoveStack(@NotNull Player playerIn, int index) {
+    public @NotNull ItemStack quickMoveStack(@NotNull Player player, int index) {
         ItemStack itemstack = ItemStack.EMPTY;
-        Slot slot = (Slot) this.slots.get(index);
+        Slot slot = this.slots.get(index);
+
         if (slot.hasItem()) {
-            ItemStack itemstack1 = slot.getItem();
-            itemstack = itemstack1.copy();
-            if (index < 5) {
-                if (!this.moveItemStackTo(itemstack1, 5, this.slots.size(), true))
+            ItemStack slotStack = slot.getItem();
+            itemstack = slotStack.copy();
+
+            if (index >= GRID_START_INDEX && index <= GRID_END_INDEX) {
+                // 从网格移动到玩家物品栏
+                if (!this.moveItemStackTo(slotStack, GRID_END_INDEX + 1, this.slots.size(), true)) {
                     return ItemStack.EMPTY;
-                slot.onQuickCraft(itemstack1, itemstack);
-            } else if (!this.moveItemStackTo(itemstack1, 0, 5, false)) {
-                if (index < 5 + 27) {
-                    if (!this.moveItemStackTo(itemstack1, 5 + 27, this.slots.size(), true))
-                        return ItemStack.EMPTY;
-                } else {
-                    if (!this.moveItemStackTo(itemstack1, 5, 5 + 27, false))
-                        return ItemStack.EMPTY;
                 }
-                return ItemStack.EMPTY;
+            } else {
+                // 从玩家物品栏移动到网格
+                if (!this.moveItemStackTo(slotStack, GRID_START_INDEX, GRID_END_INDEX + 1, false)) {
+                    return ItemStack.EMPTY;
+                }
             }
-            if (itemstack1.getCount() == 0)
+
+            if (slotStack.isEmpty()) {
                 slot.set(ItemStack.EMPTY);
-            else
+            } else {
                 slot.setChanged();
-            if (itemstack1.getCount() == itemstack.getCount())
-                return ItemStack.EMPTY;
-            slot.onTake(playerIn, itemstack1);
+            }
         }
+
         return itemstack;
     }
-
-    @Override
-    protected boolean moveItemStackTo(@NotNull ItemStack p_38904_, int p_38905_, int p_38906_, boolean p_38907_) {
-        boolean flag = false;
-        int i = p_38905_;
-        if (p_38907_) {
-            i = p_38906_ - 1;
-        }
-        if (p_38904_.isStackable()) {
-            while (!p_38904_.isEmpty()) {
-                if (p_38907_) {
-                    if (i < p_38905_) {
-                        break;
-                    }
-                } else if (i >= p_38906_) {
-                    break;
-                }
-                Slot slot = this.slots.get(i);
-                ItemStack itemstack = slot.getItem();
-                if (slot.mayPlace(itemstack) && !itemstack.isEmpty() && ItemStack.isSameItemSameTags(p_38904_, itemstack)) {
-                    int j = itemstack.getCount() + p_38904_.getCount();
-                    int maxSize = Math.min(slot.getMaxStackSize(), p_38904_.getMaxStackSize());
-                    if (j <= maxSize) {
-                        p_38904_.setCount(0);
-                        itemstack.setCount(j);
-                        slot.set(itemstack);
-                        flag = true;
-                    } else if (itemstack.getCount() < maxSize) {
-                        p_38904_.shrink(maxSize - itemstack.getCount());
-                        itemstack.setCount(maxSize);
-                        slot.set(itemstack);
-                        flag = true;
-                    }
-                }
-                if (p_38907_) {
-                    --i;
-                } else {
-                    ++i;
-                }
-            }
-        }
-        if (!p_38904_.isEmpty()) {
-            if (p_38907_) {
-                i = p_38906_ - 1;
-            } else {
-                i = p_38905_;
-            }
-            while (true) {
-                if (p_38907_) {
-                    if (i < p_38905_) {
-                        break;
-                    }
-                } else if (i >= p_38906_) {
-                    break;
-                }
-                Slot slot1 = this.slots.get(i);
-                ItemStack itemstack1 = slot1.getItem();
-                if (itemstack1.isEmpty() && slot1.mayPlace(p_38904_)) {
-                    if (p_38904_.getCount() > slot1.getMaxStackSize()) {
-                        slot1.setByPlayer(p_38904_.split(slot1.getMaxStackSize()));
-                    } else {
-                        slot1.setByPlayer(p_38904_.split(p_38904_.getCount()));
-                    }
-                    slot1.setChanged();
-                    flag = true;
-                    break;
-                }
-                if (p_38907_) {
-                    --i;
-                } else {
-                    ++i;
-                }
-            }
-        }
-        return flag;
-    }
-
-    @Override
-    public void removed(@NotNull Player playerIn) {
-        super.removed(playerIn);
-        if (!bound && playerIn instanceof ServerPlayer serverPlayer) {
-            if (!serverPlayer.isAlive() || serverPlayer.hasDisconnected()) {
-                for (int j = 0; j < internal.getSlots(); ++j) {
-                    playerIn.drop(internal.extractItem(j, internal.getStackInSlot(j).getCount(), false), false);
-                }
-            } else {
-                for (int i = 0; i < internal.getSlots(); ++i) {
-                    playerIn.getInventory().placeItemBackInInventory(internal.extractItem(i, internal.getStackInSlot(i).getCount(), false));
-                }
-            }
-        }
-    }
 }
-
-

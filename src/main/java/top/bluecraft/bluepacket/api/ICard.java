@@ -3,47 +3,47 @@ package top.bluecraft.bluepacket.api;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.resources.ResourceLocation;
-import top.bluecraft.bluepacket.client.screen.GunViewScreen;
-import top.bluecraft.bluepacket.common.card.Card;
 import top.bluecraft.bluepacket.common.page.Page;
-
-import java.util.Map;
 
 public interface ICard {
     /**
-     * @param pageIndex 页码
-     * @return 获取页面
+     * 获取卡片名称
      */
-    Page getPage(int pageIndex);
+    String getName();
+
+    /**
+     * 获取当前页码
+     */
+    int getCurrentPageIndex();
 
     /**
      * 获取总页数
-     * @return 总页数
      */
     int getTotalPages();
 
     /**
-     * 切换页面
-     * @param pageIndex 切换的页码
+     * 获取指定页面的物品列表
+     */
+    Page getPage(int pageIndex);
+
+    /**
+     * 切换到指定页面
      */
     void switchToPage(int pageIndex);
 
     /**
-     * @return 材质的资源地址
+     * 渲染卡片
      */
-    Map<String, ResourceLocation> resourceLocation();
+    void render(GuiGraphics graphics, Minecraft minecraft, int x, int y, int width, int height, boolean isSelected);
 
     /**
-     * @return Card的名称
+     * 渲染页面信息
      */
-    String name();
+    void renderPageInfo(GuiGraphics graphics, Font font, int centerX, int y);
 
-    void bindAndBlit(Minecraft minecraft, GuiGraphics gui, int x, int y, int width, int height);
-
-    void renderFont(GuiGraphics graphics, Font font, int x, int y);
-
-    void mouseClick(GunViewScreen screen, double mouseX, double mouseY);
+    /**
+     * 处理鼠标点击
+     */
+    void handleMouseClick(double mouseX, double mouseY, int centerX, int y);
 }
+

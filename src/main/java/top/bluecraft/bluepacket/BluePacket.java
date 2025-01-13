@@ -32,7 +32,7 @@ import java.util.function.Supplier;
 public class BluePacket {
 
     public static final String MODID = "bluepacket";
-    private static final Logger LOGGER = LogUtils.getLogger();
+    public static final Logger LOGGER = LogUtils.getLogger();
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
     private static final String PROTOCOL_VERSION = "1";

@@ -16,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import top.bluecraft.bluepacket.BluePacket;
 import top.bluecraft.bluepacket.api.ICardInventory;
+import top.bluecraft.bluepacket.client.menu.GunViewMenu;
 import top.bluecraft.bluepacket.common.capability.CardInventoryCapability;
 import top.bluecraft.bluepacket.common.capability.ModCapabilities;
 
@@ -38,13 +39,18 @@ public class GeneralTerminal extends Item {
     @Nullable
     @Override
     public CompoundTag getShareTag(ItemStack stack) {
-        CompoundTag tag = null;
-        tag = new CompoundTag();
-
-        CompoundTag finalTag = tag;
+        CompoundTag tag = stack.getOrCreateTag();
         stack.getCapability(ModCapabilities.CARD_INVENTORY).ifPresent(inventory -> {
-            finalTag.put("Inventory", inventory.serializeNBT());
+            tag.put("Inventory", inventory.serializeNBT());
         });
+
+        // 如果玩家正在使用这个物品
+        if (stack.getEntityRepresentation() instanceof Player player) {
+            if (player.containerMenu instanceof GunViewMenu menu) {
+                // 保存菜单状态
+                tag.put("MenuState", menu.saveState());
+            }
+        }
 
         return tag;
     }
@@ -55,6 +61,15 @@ public class GeneralTerminal extends Item {
             stack.getCapability(ModCapabilities.CARD_INVENTORY).ifPresent(inventory -> {
                 inventory.deserializeNBT(nbt.getCompound("Inventory"));
             });
+        }
+        if (nbt != null && nbt.contains("MenuState")) {
+            // 如果玩家正在使用这个物品
+            if (stack.getEntityRepresentation() instanceof Player player) {
+                if (player.containerMenu instanceof GunViewMenu menu) {
+                    // 读取菜单状态
+                    menu.loadState(nbt.getCompound("MenuState"));
+                }
+            }
         }
     }
 

@@ -3,6 +3,7 @@ package top.bluecraft.bluepacket.client.menu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.Slot;
@@ -36,6 +37,7 @@ public class GunViewMenu extends AbstractContainerMenu {
     private static final int GRID_END_INDEX = GRID_START_INDEX + SLOT_SIZE - 1;
     private final Map<String, ICardInventory> cardInventories = new HashMap<>();
     public static final ICardInventory MAIN_WEAPON_INV = new CardInventoryCapability(1100);
+    private final BitSet takenSlots;  // 记录已取出过物品的槽位
 
     // 游戏状态
     public final Level world;
@@ -53,10 +55,12 @@ public class GunViewMenu extends AbstractContainerMenu {
     public GunViewMenu(int id, Inventory playerInventory) {
         super(MenuRegistration.GUN_VIEW_MENU.get(), id);
 
+
         // 初始化基本属性
         this.entity = playerInventory.player;
         this.world = entity.level();
         this.inventory = playerInventory;
+        this.takenSlots = new BitSet(SLOT_SIZE);
 
         // 初始化位置信息
         BlockPos pos = playerInventory.player.blockPosition();
@@ -65,7 +69,7 @@ public class GunViewMenu extends AbstractContainerMenu {
         this.z = pos.getZ();
 
         // 初始化物品处理器，使用完整大小以匹配槽位索引
-        this.itemHandler = new ItemStackHandler(14700) {
+        this.itemHandler = new ItemStackHandler(1100) {
             @Override
             public boolean isItemValid(int slot, @NotNull ItemStack stack) {
                 return slot >= GRID_START_INDEX && slot < GRID_END_INDEX + 1;
@@ -91,6 +95,31 @@ public class GunViewMenu extends AbstractContainerMenu {
         // 初始化第一页物品
         if (currentCard != null) {
             loadCurrentPage();
+        }
+    }
+
+    public void markSlotTaken(int slotIndex) {
+        takenSlots.set(slotIndex);
+        broadcastChanges();
+    }
+
+    public boolean isSlotTaken(int slotIndex) {
+        return takenSlots.get(slotIndex);
+    }
+
+    public CompoundTag saveState() {
+        CompoundTag tag = new CompoundTag();
+        byte[] bytes = takenSlots.toByteArray();
+        tag.putByteArray("TakenSlots", bytes);
+        return tag;
+    }
+
+    public void loadState(CompoundTag tag) {
+        if (tag.contains("TakenSlots")) {
+            byte[] bytes = tag.getByteArray("TakenSlots");
+            takenSlots.clear();
+            BitSet.valueOf(bytes).stream().forEach(takenSlots::set);
+            broadcastChanges(); // 通知客户端更新
         }
     }
 
@@ -195,6 +224,28 @@ public class GunViewMenu extends AbstractContainerMenu {
     @Override
     public boolean stillValid(@NotNull Player player) {
         return true;
+    }
+
+    @Override
+    public void removed(@NotNull Player playerIn) {
+        super.removed(playerIn);
+        // 保存状态到物品
+        if (!playerIn.level().isClientSide) {
+            CompoundTag tag = playerIn.getUseItem().getOrCreateTag();
+            tag.put("MenuState", saveState());
+        }
+
+        if (playerIn instanceof ServerPlayer serverPlayer) {
+            if (!serverPlayer.isAlive() || serverPlayer.hasDisconnected()) {
+                for (int j = 0; j < itemHandler.getSlots(); ++j) {
+                    playerIn.drop(itemHandler.extractItem(j, itemHandler.getStackInSlot(j).getCount(), false), false);
+                }
+            } else {
+                for (int i = 0; i < itemHandler.getSlots(); ++i) {
+                    playerIn.getInventory().placeItemBackInInventory(itemHandler.extractItem(i, itemHandler.getStackInSlot(i).getCount(), false));
+                }
+            }
+        }
     }
 
     @Override

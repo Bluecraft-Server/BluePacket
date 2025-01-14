@@ -33,6 +33,9 @@ public class TerminalProvider implements MenuProvider {
             if (menuTag.contains("Inventories")) {
                 menu.loadInventories(menuTag.getCompound("Inventories"));
             }
+            if (tag.contains("MenuState")) {
+                menu.loadState(tag.getCompound("MenuState"));
+            }
         }
 
         return menu;

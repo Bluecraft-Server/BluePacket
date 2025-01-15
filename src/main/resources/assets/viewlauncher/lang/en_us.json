@@ -1,0 +1,12 @@
+{
+  "gui.viewlauncher.page": "Page %s/%s",
+  "gui.viewlauncher.config": "Config",
+  "gui.viewlauncher.main_weapon": "Main Weapon",
+  "gui.viewlauncher.return": "Return",
+  "gui.viewlauncher.card.edit": "Edit %s Card",
+  "gui.viewlauncher.card.config": "Card Config",
+  "gui.viewlauncher.card.item.config": "Card Item Config",
+  "gui.viewlauncher.card.item.config.search": "Find and add items",
+  "gui.viewlauncher.card.item.config.slot": "Select the itemstack and add",
+  "gui.viewlauncher.card.edit.config": "Edit Config"
+}

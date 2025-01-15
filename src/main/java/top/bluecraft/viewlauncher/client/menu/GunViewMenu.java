@@ -1,0 +1,298 @@
+package top.bluecraft.viewlauncher.client.menu;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraftforge.common.capabilities.ICapabilityProvider;
+import org.jetbrains.annotations.NotNull;
+import top.bluecraft.viewlauncher.ViewLauncher;
+import top.bluecraft.viewlauncher.api.ICard;
+import top.bluecraft.viewlauncher.api.ICardInventory;
+import top.bluecraft.viewlauncher.common.capability.CardInventoryCapability;
+import top.bluecraft.viewlauncher.common.card.GeneralCard;
+import top.bluecraft.viewlauncher.common.item.TerminalCapabilityProvider;
+import top.bluecraft.viewlauncher.common.page.Page;
+import top.bluecraft.viewlauncher.init.MenuRegistration;
+
+import java.util.*;
+
+public class GunViewMenu extends AbstractContainerMenu {
+    // 常量定义
+    private static final int GRID_ROWS = 10;
+    private static final int GRID_COLS = 10;
+    private static final int GRID_START_X = 14;
+    private static final int GRID_START_Y = 14;
+    private static final int SLOT_SPACING = 18;
+    private static final int PLAYER_INV_START_X = 220;
+    private static final int PLAYER_INV_START_Y = 111;
+    private static final int HOTBAR_START_Y = 169;
+    private static final int GRID_START_INDEX = 0;
+    private static final int SLOT_SIZE = 100; // 10 * 10
+    private static final int GRID_END_INDEX = GRID_START_INDEX + SLOT_SIZE - 1;
+    public static final Map<String, ICardInventory> cardInventories = new HashMap<>();
+    private final BitSet takenSlots;  // 记录已取出过物品的槽位
+    public static final ICardInventory MAIN_WEAPON_INV = new CardInventoryCapability(1000, "main_weapon");
+
+    public static final ICapabilityProvider CAPABILITY_PROVIDER = new TerminalCapabilityProvider(MAIN_WEAPON_INV);
+
+    // 游戏状态
+    public final Level world;
+    public final Player entity;
+    public int x, y, z;
+    public final List<ICard> cards;
+    public int currentPageIndex = 0;
+    public int selectedCardIndex = 0;
+    public ICard currentCard;
+
+    // 物品管理
+    public final Inventory inventory;
+    private final PersistentItemHandler itemHandler;
+
+    public GunViewMenu(int id, Inventory playerInventory) {
+        super(MenuRegistration.GUN_VIEW_MENU.get(), id);
+
+
+        // 初始化基本属性
+        this.entity = playerInventory.player;
+        this.world = entity.level();
+        this.inventory = playerInventory;
+        this.takenSlots = new BitSet(SLOT_SIZE);
+
+
+        // 初始化位置信息
+        BlockPos pos = playerInventory.player.blockPosition();
+        this.x = pos.getX();
+        this.y = pos.getY();
+        this.z = pos.getZ();
+
+        // 初始化物品处理器，使用完整大小以匹配槽位索引
+        // 创建物品处理器
+        this.itemHandler = new PersistentItemHandler(1100, GRID_START_INDEX, GRID_END_INDEX, this);
+
+        // 加载保存的数据
+        this.itemHandler.loadData();
+
+        // 初始化卡片系统
+        this.cards = initializeCards();
+        this.currentCard = !cards.isEmpty() ? cards.get(0) : null;
+
+        // 设置槽位
+        setupGridSlots();
+        setupPlayerInventorySlots(playerInventory);
+
+        // 初始化第一页物品
+        if (currentCard != null) {
+            loadCurrentPage();
+        }
+    }
+
+    public void markSlotTaken(int slotIndex) {
+        takenSlots.set(slotIndex);
+        broadcastChanges();
+    }
+
+    public boolean isSlotTaken(int slotIndex) {
+        return takenSlots.get(slotIndex);
+    }
+
+    public CompoundTag saveState() {
+        CompoundTag tag = new CompoundTag();
+        byte[] bytes = takenSlots.toByteArray();
+        tag.putByteArray("TakenSlots", bytes);
+        return tag;
+    }
+
+    public void loadState(CompoundTag tag) {
+        if (tag.contains("TakenSlots")) {
+            byte[] bytes = tag.getByteArray("TakenSlots");
+            takenSlots.clear();
+            BitSet.valueOf(bytes).stream().forEach(takenSlots::set);
+            broadcastChanges(); // 通知客户端更新
+        }
+    }
+
+    private List<ICard> initializeCards() {
+        List<ICard> cardList = new ArrayList<>();
+
+        cardList.add(new GeneralCard(MAIN_WEAPON_INV, "main_weapon",
+                new ResourceLocation(ViewLauncher.MODID, "textures/gui/main_weapon.png"),
+                this::onPageChanged));
+        return cardList;
+    }
+
+    // 保存数据
+    public static CompoundTag saveInventories() {
+        CompoundTag tag = new CompoundTag();
+        cardInventories.forEach((name, inv) -> {
+            // 为每个库存创建一个单独的CompoundTag
+            CompoundTag inventoryTag = new CompoundTag();
+
+            // 序列化库存数据
+            inventoryTag.put("Data", inv.serializeNBT());
+
+            // 添加库存类型信息，以便在加载时重新创建正确的库存类型
+            inventoryTag.putString("Type", inv.getClass().getName());
+
+            // 将库存标签添加到主标签
+            tag.put(name, inventoryTag);
+        });
+        return tag;
+    }
+
+    // 加载数据
+    public static void loadInventories(CompoundTag tag) {
+        // 遍历现有的cardInventories
+        cardInventories.forEach((name, inv) -> {
+            if (tag.contains(name)) {
+                CompoundTag inventoryTag = tag.getCompound(name);
+
+                try {
+                    // 如果存储了类型信息，可以进行更安全的反序列化
+                    if (inventoryTag.contains("Type")) {
+                        String inventoryTypeName = inventoryTag.getString("Type");
+                        Class<?> inventoryClass = Class.forName(inventoryTypeName);
+
+                        // 可以在这里添加额外的类型检查
+                        if (inv.getClass().getName().equals(inventoryTypeName)) {
+                            inv.deserializeNBT(inventoryTag.getCompound("Data"));
+                        } else {
+                            ViewLauncher.LOGGER.warn("Inventory type mismatch for " + name +
+                                    ": stored " + inventoryTypeName + ", current " + inv.getClass().getName());
+                        }
+                    } else {
+                        // 如果没有类型信息，则直接反序列化
+                        inv.deserializeNBT(inventoryTag);
+                    }
+                } catch (ClassNotFoundException e) {
+                    ViewLauncher.LOGGER.error("Could not find inventory class when loading: " + name, e);
+                }
+            }
+        });
+    }
+
+    private void onPageChanged(int newPageIndex) {
+        if (currentCard != null && newPageIndex >= 0 && newPageIndex < currentCard.getTotalPages()) {
+            currentPageIndex = newPageIndex;
+            loadCurrentPage();
+        }
+    }
+
+    private void setupGridSlots() {
+        int slotCount = 0;
+        for (int row = 0; row < GRID_ROWS && slotCount < SLOT_SIZE; row++) {
+            for (int col = 0; col < GRID_COLS && slotCount < SLOT_SIZE; col++) {
+                // 直接使用slotCount作为索引
+                int xPos = GRID_START_X + col * SLOT_SPACING;
+                int yPos = GRID_START_Y + row * SLOT_SPACING;
+
+                this.addSlot(new GunViewSlot(itemHandler, slotCount, xPos, yPos, this));
+                slotCount++;
+            }
+        }
+    }
+
+    private void setupPlayerInventorySlots(Inventory playerInventory) {
+        // 添加主物品栏槽位（3行9列）
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                this.addSlot(new Slot(playerInventory,
+                        col + (row + 1) * 9,
+                        PLAYER_INV_START_X + col * SLOT_SPACING,
+                        PLAYER_INV_START_Y + row * SLOT_SPACING));
+            }
+        }
+
+        // 添加快捷栏槽位（1行9列）
+        for (int col = 0; col < 9; col++) {
+            this.addSlot(new Slot(playerInventory,
+                    col,
+                    PLAYER_INV_START_X + col * SLOT_SPACING,
+                    HOTBAR_START_Y));
+        }
+    }
+
+    public void loadCurrentPage() {
+        if (currentCard == null) return;
+
+        Page page = currentCard.getPage(currentPageIndex);
+        List<ItemStack> items = page.items();
+
+        // 更新槽位，考虑偏移量
+        for (int i = 0; i < Math.min(items.size(), SLOT_SIZE); i++) {
+            itemHandler.setStackInSlot(i + GRID_START_INDEX, items.get(i).copy());
+        }
+
+        // 清空剩余槽位
+        for (int i = items.size(); i < SLOT_SIZE; i++) {
+            itemHandler.setStackInSlot(i + GRID_START_INDEX, ItemStack.EMPTY);
+        }
+
+        broadcastChanges();
+    }
+
+    public void selectCard(int index) {
+        if (index >= 0 && index < cards.size() && index != selectedCardIndex) {
+            selectedCardIndex = index;
+            currentCard = cards.get(index);
+            currentPageIndex = 0;
+            loadCurrentPage();
+        }
+    }
+
+    @Override
+    public boolean stillValid(@NotNull Player player) {
+        return true;
+    }
+
+    @Override
+    public void removed(@NotNull Player playerIn) {
+        super.removed(playerIn);
+        // 保存状态到物品
+        if (!playerIn.level().isClientSide) {
+            CompoundTag tag = playerIn.getUseItem().getOrCreateTag();
+            tag.put("MenuState", saveState());
+            itemHandler.saveData();
+        }
+    }
+
+    @Override
+    public @NotNull ItemStack quickMoveStack(@NotNull Player player, int index) {
+        ItemStack itemstack = ItemStack.EMPTY;
+        Slot slot = this.slots.get(index);
+
+        if (slot.hasItem()) {
+            ItemStack slotStack = slot.getItem();
+            itemstack = slotStack.copy();
+
+            if (index >= GRID_START_INDEX && index <= GRID_END_INDEX) {
+                // 从网格移动到玩家物品栏
+                if (!this.moveItemStackTo(slotStack, GRID_END_INDEX + 1, this.slots.size(), true)) {
+                    return ItemStack.EMPTY;
+                }
+            } else {
+                // 从玩家物品栏移动到网格
+                if (!this.moveItemStackTo(slotStack, GRID_START_INDEX, GRID_END_INDEX + 1, false)) {
+                    return ItemStack.EMPTY;
+                }
+            }
+
+            if (slotStack.isEmpty()) {
+                slot.set(ItemStack.EMPTY);
+            } else {
+                slot.setChanged();
+            }
+        }
+
+        return itemstack;
+    }
+
+    public PersistentItemHandler getItemHandler() {
+        return itemHandler;
+    }
+}

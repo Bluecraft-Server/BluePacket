@@ -7,6 +7,6 @@
   "gui.viewlauncher.card.config": "Card Config",
   "gui.viewlauncher.card.item.config": "Card Item Config",
   "gui.viewlauncher.card.item.config.search": "Find and add items",
-  "gui.viewlauncher.card.item.config.slot": "Select the itemstack and add",
+  "gui.viewlauncher.card.item.config.slot": "Select the itemstack and add or delete",
   "gui.viewlauncher.card.edit.config": "Edit Config"
 }

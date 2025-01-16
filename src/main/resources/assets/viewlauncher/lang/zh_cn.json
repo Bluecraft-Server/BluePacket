@@ -7,6 +7,6 @@
   "gui.viewlauncher.card.config": "卡片配置",
   "gui.viewlauncher.card.item.config": "卡片物品配置",
   "gui.viewlauncher.card.item.config.search": "查找并添加物品栈",
-  "gui.viewlauncher.card.item.config.slot": "选择并添加物品栈",
+  "gui.viewlauncher.card.item.config.slot": "选择并添加或删除物品栈",
   "gui.viewlauncher.card.edit.config": "编辑配置"
 }

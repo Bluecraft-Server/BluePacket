@@ -25,19 +25,19 @@ import java.util.*;
 public class GunViewMenu extends AbstractContainerMenu {
     // 常量定义
     private static final int GRID_ROWS = 10;
-    private static final int GRID_COLS = 10;
-    private static final int GRID_START_X = 14;
-    private static final int GRID_START_Y = 14;
+    private static final int GRID_COLS = 11;
+    private static final int GRID_START_X = 10;
+    private static final int GRID_START_Y = 10;
     private static final int SLOT_SPACING = 18;
     private static final int PLAYER_INV_START_X = 220;
     private static final int PLAYER_INV_START_Y = 111;
     private static final int HOTBAR_START_Y = 169;
     private static final int GRID_START_INDEX = 0;
-    private static final int SLOT_SIZE = 100; // 10 * 10
+    private static final int SLOT_SIZE = 110; // 10 * 10
     private static final int GRID_END_INDEX = GRID_START_INDEX + SLOT_SIZE - 1;
     public static final Map<String, ICardInventory> cardInventories = new HashMap<>();
     private final BitSet takenSlots;  // 记录已取出过物品的槽位
-    public static final ICardInventory MAIN_WEAPON_INV = new CardInventoryCapability(1000, "main_weapon");
+    public static final ICardInventory MAIN_WEAPON_INV = new CardInventoryCapability(1100, "main_weapon");
 
     public static final ICapabilityProvider CAPABILITY_PROVIDER = new TerminalCapabilityProvider(MAIN_WEAPON_INV);
 

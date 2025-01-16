@@ -17,7 +17,6 @@ import top.bluecraft.viewlauncher.api.ICard;
 import top.bluecraft.viewlauncher.api.ICardInventory;
 import top.bluecraft.viewlauncher.client.menu.GunViewMenu;
 import top.bluecraft.viewlauncher.network.AddItemToCardMessage;
-import top.bluecraft.viewlauncher.network.SlotTakeMessage;
 import top.bluecraft.viewlauncher.util.ItemHooks;
 
 import java.util.ArrayList;
@@ -28,11 +27,12 @@ public class CardItemConfigScreen extends Screen {
     private final ICard card;
     private EditBox itemInput;
     private EditBox countInput;
+    private EditBox deleteSlotInput;  // 新增：用于输入要删除的槽位索引
     private ConfigSlot itemSlot;
     private final List<Slot> inventorySlots = new ArrayList<>();
 
     // 添加物品栏相关常量
-    private static final int INVENTORY_START_X = 0;  // 这些值需要根据你的GUI布局调整
+    private static final int INVENTORY_START_X = 0;
     private static final int INVENTORY_START_Y = 0;
     private static final int SLOT_SIZE = 18;
     private static final int SLOT_SPACING = 2;
@@ -49,7 +49,7 @@ public class CardItemConfigScreen extends Screen {
 
         // 计算物品栏起始位置（居中）
         int invStartX = (width - 9 * SLOT_SIZE) / 2;
-        int invStartY = height - 90;  // 距离底部的距离
+        int invStartY = height - 90;
 
         // 添加玩家背包槽位（3行9列）
         for (int row = 0; row < 3; row++) {
@@ -81,8 +81,16 @@ public class CardItemConfigScreen extends Screen {
         this.countInput = new EditBox(font,
                 width / 2 + 20, height / 2 - 80, 60, 20,
                 Component.literal("count"));
+
+        // 新增：删除槽位输入框
+        this.deleteSlotInput = new EditBox(font,
+                width / 2 - 50, height / 2 - 40, 60, 20,
+                Component.literal("slot index"));
+        this.deleteSlotInput.setSuggestion("Slot Index");
+
         addRenderableWidget(itemInput);
         addRenderableWidget(countInput);
+        addRenderableWidget(deleteSlotInput);  // 添加删除槽位输入框
 
         // 添加搜索框的添加按钮
         addRenderableWidget(Button.builder(Component.literal("+"), button -> {
@@ -125,10 +133,54 @@ public class CardItemConfigScreen extends Screen {
                 .size(20, 20)
                 .build());
 
+        // 新增：删除按钮
+        addRenderableWidget(Button.builder(Component.literal("D"), button -> {
+                    try {
+                        int slotIndex = Integer.parseInt(deleteSlotInput.getValue());
+                        ICardInventory inventory = card.getInventory();
+
+                        if (slotIndex >= 0 && slotIndex < inventory.getSlots()) {
+                            // 将指定槽位的物品设为空
+                            inventory.setStackInSlot(slotIndex, ItemStack.EMPTY);
+
+                            // 发送更新包到服务器
+                            if (this.minecraft != null && this.minecraft.player != null &&
+                                    this.minecraft.level != null && this.minecraft.level.isClientSide() &&
+                                    this.minecraft.player.getServer() != null) {
+                                ViewLauncher.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
+                                        card.getName(),
+                                        slotIndex,
+                                        ItemStack.EMPTY  // 发送空物品栈
+                                ));
+                            }
+
+                            if (this.minecraft != null && this.minecraft.player != null && this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
+                                menu.getItemHandler().saveData();
+                            }
+                            deleteSlotInput.setValue("");
+                            if (minecraft != null) {
+                                minecraft.player.sendSystemMessage(Component.literal("物品已成功删除"));
+                            }
+                        } else {
+                            minecraft.player.sendSystemMessage(Component.literal("无效的槽位索引"));
+                        }
+                    } catch (NumberFormatException e) {
+                        if (minecraft != null) {
+                            minecraft.player.sendSystemMessage(Component.literal("请输入有效的槽位索引数字"));
+                        }
+                    } catch (Exception e) {
+                        if (minecraft != null) {
+                            minecraft.player.sendSystemMessage(Component.literal("删除物品时发生错误"));
+                        }
+                    }
+                })
+                .pos(width / 2 + 20, height / 2 - 40)
+                .size(20, 20)
+                .build());
+
         if (this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
             this.itemSlot = new ConfigSlot(width / 2 - 100, height / 2 - 40, 0, this.font, menu);
         }
-
 
         // 添加配置槽的添加按钮
         addRenderableWidget(Button.builder(Component.literal("+"), button -> {
@@ -206,7 +258,7 @@ public class CardItemConfigScreen extends Screen {
     }
 
     private void addItemToCard(ItemStack item) {
-        ICardInventory inventory = card.getInventory(); // 假设你的ICard接口中有getInventory方法
+        ICardInventory inventory = card.getInventory();
 
         // 找到第一个空槽位
         for (int i = 0; i < inventory.getSlots(); i++) {
@@ -218,9 +270,9 @@ public class CardItemConfigScreen extends Screen {
                 // 发送更新包到服务器
                 if (this.minecraft != null && this.minecraft.player != null && this.minecraft.level != null && this.minecraft.level.isClientSide() && this.minecraft.player.getServer() != null) {
                     ViewLauncher.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
-                            card.getName(),  // 用于识别是哪个卡片
-                            i,              // 槽位索引
-                            item.getItem().getDefaultInstance()  // 物品
+                            card.getName(),
+                            i,
+                            item.getItem().getDefaultInstance()
                     ));
                 }
 
@@ -241,5 +293,4 @@ public class CardItemConfigScreen extends Screen {
 
         return super.mouseClicked(mouseX, mouseY, button);
     }
-
 }

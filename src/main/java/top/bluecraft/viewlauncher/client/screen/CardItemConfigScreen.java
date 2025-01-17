@@ -192,7 +192,7 @@ public class CardItemConfigScreen extends Screen {
                         }
                     }
                 })
-                .pos(width / 2 + 85, height / 2 - 40)
+                .pos(width / 2 - 75, height / 2 - 40)
                 .size(20, 20)
                 .build());
 

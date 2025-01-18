@@ -7,12 +7,11 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
-import top.bluecraft.viewlauncher.ViewLauncher;
+import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.api.ICard;
 import top.bluecraft.viewlauncher.api.ICardInventory;
 import top.bluecraft.viewlauncher.client.menu.GunViewMenu;
@@ -38,7 +37,7 @@ public class CardItemConfigScreen extends Screen {
     private static final int SLOT_SPACING = 2;
 
     public CardItemConfigScreen(CardEditScreen parentScreen, ICard card) {
-        super(Component.translatable("gui." + ViewLauncher.MODID + ".card.item.config"));
+        super(Component.translatable("gui." + CombatDepot.MODID + ".card.item.config"));
         this.parentScreen = parentScreen;
         this.card = card;
     }
@@ -107,7 +106,7 @@ public class CardItemConfigScreen extends Screen {
                             if (this.minecraft != null && this.minecraft.player != null &&
                                     this.minecraft.level != null && this.minecraft.level.isClientSide() &&
                                     this.minecraft.player.getServer() != null) {
-                                ViewLauncher.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
+                                CombatDepot.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
                                         card.getName(),
                                         slotIndex,
                                         ItemStack.EMPTY  // 发送空物品栈
@@ -189,7 +188,7 @@ public class CardItemConfigScreen extends Screen {
 
         // 返回按钮
         addRenderableWidget(Button.builder(
-                        Component.translatable("gui." + ViewLauncher.MODID + ".return"),
+                        Component.translatable("gui." + CombatDepot.MODID + ".return"),
                         button -> {
                             if (minecraft != null) {
                                 minecraft.setScreen(parentScreen);
@@ -222,11 +221,11 @@ public class CardItemConfigScreen extends Screen {
 
         // 渲染文本提示
         graphics.drawString(font,
-                Component.translatable("gui." + ViewLauncher.MODID + ".card.item.config.search"),
+                Component.translatable("gui." + CombatDepot.MODID + ".card.item.config.search"),
                 width / 2 - 100, height / 2 - 95,
                 0xFFFFFF);
         graphics.drawString(font,
-                Component.translatable("gui." + ViewLauncher.MODID + ".card.item.config.slot"),
+                Component.translatable("gui." + CombatDepot.MODID + ".card.item.config.slot"),
                 width / 2 - 100, height / 2 - 55,
                 0xFFFFFF);
     }
@@ -285,7 +284,7 @@ public class CardItemConfigScreen extends Screen {
             if (this.minecraft != null && this.minecraft.player != null &&
                     this.minecraft.level != null && this.minecraft.level.isClientSide() &&
                     this.minecraft.player.getServer() != null) {
-                ViewLauncher.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
+                CombatDepot.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
                         card.getName(),
                         targetSlot,
                         item.getItem().getDefaultInstance()

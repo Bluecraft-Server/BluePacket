@@ -10,7 +10,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
-import top.bluecraft.viewlauncher.ViewLauncher;
+import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.client.menu.GunViewMenu;
 import top.bluecraft.viewlauncher.common.card.Card;
 import top.bluecraft.viewlauncher.common.page.Page;
@@ -68,7 +68,7 @@ public class CardSelectionMessage {
 
                 // 验证选择的卡片索引
                 if (message.selectedIndex < 0 || message.selectedIndex >= menu.cards.size()) {
-                    ViewLauncher.LOGGER.warn("Invalid card index received: {}", message.selectedIndex);
+                    CombatDepot.LOGGER.warn("Invalid card index received: {}", message.selectedIndex);
                     return;
                 }
 
@@ -112,7 +112,7 @@ public class CardSelectionMessage {
                     serverPlayer.containerMenu instanceof GunViewMenu &&
                     isPlayerNearby(serverPlayer, pos, 8)) {  // 8格范围内
 
-                ViewLauncher.PACKET_HANDLER.send(
+                CombatDepot.PACKET_HANDLER.send(
                         PacketDistributor.PLAYER.with(() -> serverPlayer),
                         new ClientboundCardSelectionPacket(message)
                 );

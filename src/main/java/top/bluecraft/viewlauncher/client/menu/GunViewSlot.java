@@ -5,7 +5,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.SlotItemHandler;
 import org.jetbrains.annotations.NotNull;
-import top.bluecraft.viewlauncher.ViewLauncher;
+import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.network.SlotTakeMessage;
 
 public class GunViewSlot extends SlotItemHandler {
@@ -42,7 +42,7 @@ public class GunViewSlot extends SlotItemHandler {
         menu.markSlotTaken(getSlotIndex());
 
         if (menu.world.isClientSide() && menu.entity.getServer() != null) {
-            ViewLauncher.PACKET_HANDLER.sendToServer(new SlotTakeMessage(getSlotIndex()));
+            CombatDepot.PACKET_HANDLER.sendToServer(new SlotTakeMessage(getSlotIndex()));
         }
     }
 }

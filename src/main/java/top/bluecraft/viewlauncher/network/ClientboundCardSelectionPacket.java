@@ -4,7 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.network.NetworkEvent;
-import top.bluecraft.viewlauncher.ViewLauncher;
+import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.client.menu.GunViewMenu;
 import top.bluecraft.viewlauncher.client.screen.GunViewScreen;
 
@@ -60,7 +60,7 @@ public class ClientboundCardSelectionPacket{
 
                 // 验证卡片索引
                 if (packet.selectedIndex < 0 || packet.selectedIndex >= menu.cards.size()) {
-                    ViewLauncher.LOGGER.warn("Invalid card index received from server: {}", packet.selectedIndex);
+                    CombatDepot.LOGGER.warn("Invalid card index received from server: {}", packet.selectedIndex);
                     return;
                 }
 

@@ -1,0 +1,13 @@
+{
+  "gui.compatdepot.page": "Page %s/%s",
+  "gui.compatdepot.config": "Config",
+  "gui.compatdepot.main_weapon": "Main Weapon",
+  "gui.compatdepot.return": "Return",
+  "gui.compatdepot.card.edit": "Edit %s Card",
+  "gui.compatdepot.card.config": "Card Config",
+  "gui.compatdepot.card.item.config": "Card Item Config",
+  "gui.compatdepot.card.item.config.search": "Find and add items",
+  "gui.compatdepot.card.item.config.slot": "Select the itemstack and add or delete",
+  "gui.compatdepot.card.edit.config": "Edit Config",
+  "item.compatdepot.general_terminal": "General Terminal"
+}

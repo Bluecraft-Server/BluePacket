@@ -5,7 +5,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
-import top.bluecraft.viewlauncher.ViewLauncher;
+import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.api.ICard;
 
 import java.util.List;
@@ -18,7 +18,7 @@ public class CardConfigScreen extends Screen {
     private static final int BUTTON_SPACING = 10;
 
     public CardConfigScreen(GunViewScreen parentScreen) {
-        super(Component.translatable("gui." + ViewLauncher.MODID + ".card.config"));
+        super(Component.translatable("gui." + CombatDepot.MODID + ".card.config"));
         this.parentScreen = parentScreen;
     }
 
@@ -56,7 +56,7 @@ public class CardConfigScreen extends Screen {
             int x = startX + col * (BUTTON_WIDTH + BUTTON_SPACING);
             int y = startY + row * (BUTTON_HEIGHT + BUTTON_SPACING);
 
-            addRenderableWidget(Button.builder(Component.translatable("gui." + ViewLauncher.MODID + "." + card.getName()), (button) -> {
+            addRenderableWidget(Button.builder(Component.translatable("gui." + CombatDepot.MODID + "." + card.getName()), (button) -> {
                         if (minecraft != null) {
                             minecraft.setScreen(new CardEditScreen(this, card));
                         }
@@ -67,7 +67,7 @@ public class CardConfigScreen extends Screen {
         }
 
         // 添加返回按钮
-        addRenderableWidget(Button.builder(Component.translatable("gui." + ViewLauncher.MODID + ".return"), (button) -> {
+        addRenderableWidget(Button.builder(Component.translatable("gui." + CombatDepot.MODID + ".return"), (button) -> {
                     if (minecraft != null) {
                         minecraft.setScreen(parentScreen);
                     }

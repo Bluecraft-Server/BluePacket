@@ -14,7 +14,7 @@ import java.util.List;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import org.jetbrains.annotations.NotNull;
-import top.bluecraft.viewlauncher.ViewLauncher;
+import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.api.ICard;
 import top.bluecraft.viewlauncher.client.menu.GunViewMenu;
 import top.bluecraft.viewlauncher.network.CardSelectionMessage;
@@ -34,7 +34,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	private static final int CARD_NAME_Y = 5;         // 卡片名称Y坐标
 
     // 资源位置
-	private static final ResourceLocation TEXTURE = new ResourceLocation(ViewLauncher.MODID, "textures/gui/gun_view.png");
+	private static final ResourceLocation TEXTURE = new ResourceLocation(CombatDepot.MODID, "textures/gui/gun_view.png");
 
 	// 成员变量
 	private final Level world;
@@ -138,7 +138,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 					menu.currentCard = cards.get(i);
 					menu.currentCard.switchToPage(0);
 
-					ViewLauncher.PACKET_HANDLER.sendToServer(
+					CombatDepot.PACKET_HANDLER.sendToServer(
 							new CardSelectionMessage(i, x, y, z)
 					);
 					return true;
@@ -155,7 +155,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		if (hasConfigPermission()) {
             // 设置按钮位置
             // 设置按钮大小
-            Button configButton = Button.builder(Component.translatable("gui." + ViewLauncher.MODID + ".config"), (button) -> {
+            Button configButton = Button.builder(Component.translatable("gui." + CombatDepot.MODID + ".config"), (button) -> {
                         if (minecraft != null) {
                             minecraft.setScreen(new CardConfigScreen(this));
                         }
@@ -190,7 +190,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 
 	public void updateCardSelection(int newIndex) {
 		if (newIndex < 0 || newIndex >= cards.size()) {
-			ViewLauncher.LOGGER.warn("Attempted to select invalid card index: {}", newIndex);
+			CombatDepot.LOGGER.warn("Attempted to select invalid card index: {}", newIndex);
 			return;
 		}
 

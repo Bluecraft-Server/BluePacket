@@ -2,11 +2,15 @@ package top.bluecraft.viewlauncher;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.data.DataGenerator;
+import net.minecraft.data.PackOutput;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.data.LanguageProvider;
+import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -21,6 +25,7 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
+import top.bluecraft.viewlauncher.client.modelprovider.ModelProvider;
 import top.bluecraft.viewlauncher.init.ItemRegistration;
 import top.bluecraft.viewlauncher.init.MenuRegistration;
 
@@ -28,10 +33,10 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-@Mod(ViewLauncher.MODID)
-public class ViewLauncher {
+@Mod(CombatDepot.MODID)
+public class CombatDepot {
 
-    public static final String MODID = "viewlauncher";
+    public static final String MODID = "compatdepot";
     public static final Logger LOGGER = LogUtils.getLogger();
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
@@ -39,11 +44,11 @@ public class ViewLauncher {
     public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 
     private static int messageID = 0;
-    public static final RegistryObject<CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("bcp_tab", () -> CreativeModeTab.builder().withTabsBefore(CreativeModeTabs.COMBAT).icon(Items.DIAMOND::getDefaultInstance).displayItems((parameters, output) -> {
+    public static final RegistryObject<CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("bcp_tab", () -> CreativeModeTab.builder().withTabsBefore(CreativeModeTabs.COMBAT).icon(ItemRegistration.GENERAL_TERMINAL.get()::getDefaultInstance).displayItems((parameters, output) -> {
         output.accept(ItemRegistration.GENERAL_TERMINAL.get());
     }).build());
 
-    public ViewLauncher() {
+    public CombatDepot() {
         @SuppressWarnings({"removal"})
         IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
         bus.addListener(this::commonSetup);
@@ -52,6 +57,7 @@ public class ViewLauncher {
         CREATIVE_MODE_TABS.register(bus);
         MinecraftForge.EVENT_BUS.register(this);
         bus.addListener(this::addCreative);
+        bus.addListener(CombatDepot::onGatherData);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
@@ -62,10 +68,48 @@ public class ViewLauncher {
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
     }
 
+    public static void onGatherData(GatherDataEvent event) {
+        var gen = event.getGenerator();
+        var packOutput = gen.getPackOutput();
+        var helper = event.getExistingFileHelper();
+
+        gen.addProvider(event.includeClient(), new ModelProvider(packOutput, helper));
+        gen.addProvider(event.includeClient(), new EnglishLanguageProvider(packOutput));
+        gen.addProvider(event.includeClient(), new ChineseLanguageProvider(packOutput));
+    }
+
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         LOGGER.info("HELLO from server starting");
     }
+
+    // 英文语言文件
+    public static class EnglishLanguageProvider extends LanguageProvider {
+        public EnglishLanguageProvider(PackOutput output) {
+            super(output, CombatDepot.MODID, "en_us");
+        }
+        // ...
+
+        @Override
+        protected void addTranslations() {
+            // 等价于 this.add("item.xiaozhong.sulfur_dust", "Sulfur Dust")
+            this.add(ItemRegistration.GENERAL_TERMINAL.get(), "General Terminal");
+        }
+    }
+
+    // 中文语言文件
+    public static class ChineseLanguageProvider extends LanguageProvider {
+        public ChineseLanguageProvider(PackOutput output) {
+            super(output, CombatDepot.MODID, "zh_cn");
+        }
+
+        @Override
+        protected void addTranslations() {
+            // 等价于 this.add("item.xiaozhong.sulfur_dust", "硫粉")
+            this.add(ItemRegistration.GENERAL_TERMINAL.get(), "通用终端");
+        }
+    }
+
 
 
     public static <T> void addNetworkMessage(Class<T> messageType, BiConsumer<T, FriendlyByteBuf> encoder, Function<FriendlyByteBuf, T> decoder, BiConsumer<T, Supplier<NetworkEvent.Context>> messageConsumer) {

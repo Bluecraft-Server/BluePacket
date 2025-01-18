@@ -11,11 +11,9 @@ import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import top.bluecraft.viewlauncher.ViewLauncher;
+import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.client.menu.GunViewMenu;
-import top.bluecraft.viewlauncher.common.capability.CardInventoryCapability;
 import top.bluecraft.viewlauncher.common.capability.ModCapabilities;
-import top.bluecraft.viewlauncher.init.MenuRegistration;
 
 public class GeneralTerminal extends Item {
     public GeneralTerminal() {
@@ -89,7 +87,7 @@ public class GeneralTerminal extends Item {
 
         if (!world.isClientSide && entity instanceof ServerPlayer serverPlayer) {
             NetworkHooks.openScreen(serverPlayer, new TerminalProvider(itemstack));
-            ViewLauncher.LOGGER.info("[ViewLauncher] Opened server screen");
+            CombatDepot.LOGGER.info("[CombatDepot] Opened server screen");
         }
 
         return InteractionResultHolder.success(itemstack);

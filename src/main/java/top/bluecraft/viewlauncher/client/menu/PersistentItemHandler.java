@@ -6,7 +6,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
-import top.bluecraft.viewlauncher.ViewLauncher;
+import top.bluecraft.viewlauncher.CombatDepot;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,7 +47,7 @@ public class PersistentItemHandler extends ItemStackHandler {
             File configFile = new File(FMLPaths.CONFIGDIR.get().toFile(), "gun_view_items.nbt");
             NbtIo.write(tag, configFile);
         } catch (IOException e) {
-            ViewLauncher.LOGGER.error("Failed to save item handler data", e);
+            CombatDepot.LOGGER.error("Failed to save item handler data", e);
         }
     }
 
@@ -61,7 +61,7 @@ public class PersistentItemHandler extends ItemStackHandler {
                 }
             }
         } catch (IOException e) {
-            ViewLauncher.LOGGER.error("Failed to load item handler data", e);
+            CombatDepot.LOGGER.error("Failed to load item handler data", e);
         }
     }
 }

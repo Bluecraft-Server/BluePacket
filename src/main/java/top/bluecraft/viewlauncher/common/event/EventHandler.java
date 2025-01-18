@@ -4,14 +4,13 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.event.GameShuttingDownEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import top.bluecraft.viewlauncher.ViewLauncher;
+import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.api.ICardInventory;
 import top.bluecraft.viewlauncher.client.menu.GunViewMenu;
 
@@ -19,7 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
-@Mod.EventBusSubscriber(modid = ViewLauncher.MODID)
+@Mod.EventBusSubscriber(modid = CombatDepot.MODID)
 public class EventHandler {
     private static final String INVENTORIES_TAG_NAME = "CardInventories";
 
@@ -71,7 +70,7 @@ public class EventHandler {
             NbtIo.write(rootTag, inventoriesFile);
         } catch (IOException e) {
             // 记录错误
-            ViewLauncher.LOGGER.error("Failed to save card inventories", e);
+            CombatDepot.LOGGER.error("Failed to save card inventories", e);
         }
     }
 
@@ -101,7 +100,7 @@ public class EventHandler {
             }
         } catch (IOException e) {
             // 记录错误
-            ViewLauncher.LOGGER.error("Failed to load card inventories", e);
+            CombatDepot.LOGGER.error("Failed to load card inventories", e);
         }
     }
 }

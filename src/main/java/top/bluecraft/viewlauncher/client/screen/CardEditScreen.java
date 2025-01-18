@@ -7,7 +7,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
-import top.bluecraft.viewlauncher.ViewLauncher;
+import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.api.ICard;
 
 import java.util.List;
@@ -20,7 +20,7 @@ public class CardEditScreen extends Screen {
     private static final int ITEMS_PER_PAGE = 27; // 每页显示27个物品
 
     public CardEditScreen(CardConfigScreen parentScreen, ICard card) {
-        super(Component.translatable("gui." + ViewLauncher.MODID + ".card.edit", card.getTranslatableComponent()));
+        super(Component.translatable("gui." + CombatDepot.MODID + ".card.edit", card.getTranslatableComponent()));
         this.parentScreen = parentScreen;
         this.card = card;
     }
@@ -31,7 +31,7 @@ public class CardEditScreen extends Screen {
 
         // 添加打开配置界面的按钮
         addRenderableWidget(Button.builder(
-                        Component.translatable("gui." + ViewLauncher.MODID + ".card.edit.config"),
+                        Component.translatable("gui." + CombatDepot.MODID + ".card.edit.config"),
                         button -> {
                             if (minecraft != null) {
                                 minecraft.setScreen(new CardItemConfigScreen(this, card));
@@ -42,7 +42,7 @@ public class CardEditScreen extends Screen {
                 .build());
 
         addRenderableWidget(Button.builder(
-                        Component.translatable("gui." + ViewLauncher.MODID + ".return"),
+                        Component.translatable("gui." + CombatDepot.MODID + ".return"),
                         button -> {
                             if (minecraft != null) {
                                 minecraft.setScreen(parentScreen);
@@ -62,7 +62,7 @@ public class CardEditScreen extends Screen {
         graphics.drawCenteredString(font, title, width / 2, 20, 0xFFFFFF);
 
         // 渲染页面信息
-        Component pageInfo = Component.translatable("gui." + ViewLauncher.MODID + ".page", currentPage + 1, card.getTotalPages());
+        Component pageInfo = Component.translatable("gui." + CombatDepot.MODID + ".page", currentPage + 1, card.getTotalPages());
         graphics.drawCenteredString(font, pageInfo, width / 2, height / 2 - 10, 0xFFFFFF);
 
         // 渲染当前页面的物品

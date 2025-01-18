@@ -11,7 +11,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import org.jetbrains.annotations.NotNull;
-import top.bluecraft.viewlauncher.ViewLauncher;
+import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.api.ICard;
 import top.bluecraft.viewlauncher.api.ICardInventory;
 import top.bluecraft.viewlauncher.common.capability.CardInventoryCapability;
@@ -121,7 +121,7 @@ public class GunViewMenu extends AbstractContainerMenu {
         List<ICard> cardList = new ArrayList<>();
 
         cardList.add(new GeneralCard(MAIN_WEAPON_INV, "main_weapon",
-                new ResourceLocation(ViewLauncher.MODID, "textures/gui/main_weapon.png"),
+                new ResourceLocation(CombatDepot.MODID, "textures/gui/main_weapon.png"),
                 this::onPageChanged));
         return cardList;
     }
@@ -162,7 +162,7 @@ public class GunViewMenu extends AbstractContainerMenu {
                         if (inv.getClass().getName().equals(inventoryTypeName)) {
                             inv.deserializeNBT(inventoryTag.getCompound("Data"));
                         } else {
-                            ViewLauncher.LOGGER.warn("Inventory type mismatch for " + name +
+                            CombatDepot.LOGGER.warn("Inventory type mismatch for " + name +
                                     ": stored " + inventoryTypeName + ", current " + inv.getClass().getName());
                         }
                     } else {
@@ -170,7 +170,7 @@ public class GunViewMenu extends AbstractContainerMenu {
                         inv.deserializeNBT(inventoryTag);
                     }
                 } catch (ClassNotFoundException e) {
-                    ViewLauncher.LOGGER.error("Could not find inventory class when loading: " + name, e);
+                    CombatDepot.LOGGER.error("Could not find inventory class when loading: " + name, e);
                 }
             }
         });

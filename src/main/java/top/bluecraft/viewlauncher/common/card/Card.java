@@ -9,7 +9,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import top.bluecraft.viewlauncher.ViewLauncher;
+import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.api.ICard;
 import top.bluecraft.viewlauncher.api.ICardInventory;
 import top.bluecraft.viewlauncher.common.page.Page;
@@ -130,18 +130,18 @@ public abstract class Card implements ICard {
 
             RenderSystem.disableBlend();
         } catch (Exception e) {
-            ViewLauncher.LOGGER.error("Failed to render card: {}", name, e);
+            CombatDepot.LOGGER.error("Failed to render card: {}", name, e);
         }
     }
 
     @Override
     public void renderPageInfo(GuiGraphics graphics, Font font, int centerX, int y) {
         // 渲染页码
-        Component pageInfo = Component.translatable("gui." + ViewLauncher.MODID + ".page", currentPageIndex + 1, getTotalPages());
+        Component pageInfo = Component.translatable("gui." + CombatDepot.MODID + ".page", currentPageIndex + 1, getTotalPages());
         graphics.drawCenteredString(font, pageInfo, centerX, y, PAGE_INFO_COLOR);
 
         // 渲染卡片名称
-        graphics.drawCenteredString(font, Component.translatable("gui." + ViewLauncher.MODID + "." + name), centerX, y - 15, PAGE_INFO_COLOR);
+        graphics.drawCenteredString(font, Component.translatable("gui." + CombatDepot.MODID + "." + name), centerX, y - 15, PAGE_INFO_COLOR);
 
     }
 
@@ -180,7 +180,7 @@ public abstract class Card implements ICard {
 
     @Override
     public Component getTranslatableComponent() {
-        return Component.translatable("gui." + ViewLauncher.MODID + "." + name);
+        return Component.translatable("gui." + CombatDepot.MODID + "." + name);
     }
 
     @Override

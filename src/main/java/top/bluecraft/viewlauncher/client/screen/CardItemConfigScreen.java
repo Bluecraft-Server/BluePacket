@@ -81,6 +81,7 @@ public class CardItemConfigScreen extends Screen {
         this.countInput = new EditBox(font,
                 width / 2 + 20, height / 2 - 80, 60, 20,
                 Component.literal("count"));
+        this.countInput.setSuggestion("count");
 
         // 新增：删除槽位输入框
         this.deleteSlotInput = new EditBox(font,
@@ -91,47 +92,6 @@ public class CardItemConfigScreen extends Screen {
         addRenderableWidget(itemInput);
         addRenderableWidget(countInput);
         addRenderableWidget(deleteSlotInput);  // 添加删除槽位输入框
-
-        // 添加搜索框的添加按钮
-        addRenderableWidget(Button.builder(Component.literal("+"), button -> {
-                    try {
-                        // 先验证数量
-                        int count;
-                        try {
-                            count = Integer.parseInt(countInput.getValue());
-                            if (count <= 0 || count > 64) {
-                                minecraft.player.sendSystemMessage(Component.literal("物品数量必须在1-64之间"));
-                                return;
-                            }
-                        } catch (NumberFormatException e) {
-                            minecraft.player.sendSystemMessage(Component.literal("请输入有效的物品数量"));
-                            return;
-                        }
-
-                        // 验证物品ID
-                        try {
-                            ResourceLocation itemId = new ResourceLocation(itemInput.getValue());
-                            Item item = ItemHooks.getItemOrThrow(itemId.getNamespace(), itemId.getPath());
-
-                            ItemStack itemStack = new ItemStack(item, count);
-                            addItemToCard(itemStack);
-                            if (this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
-                                menu.getItemHandler().saveData();
-                            }
-                            itemInput.setValue("");
-                            countInput.setValue("");
-                        } catch (ResourceLocationException e) {
-                            minecraft.player.sendSystemMessage(Component.literal("物品命名空间格式无效"));
-                        } catch (Exception e) {
-                            minecraft.player.sendSystemMessage(Component.literal("找不到指定的物品"));
-                        }
-                    } catch (Exception e) {
-                        minecraft.player.sendSystemMessage(Component.literal("添加物品时发生错误"));
-                    }
-                })
-                .pos(width / 2 + 85, height / 2 - 80)
-                .size(20, 20)
-                .build());
 
         // 新增：删除按钮
         addRenderableWidget(Button.builder(Component.literal("D"), button -> {
@@ -176,9 +136,46 @@ public class CardItemConfigScreen extends Screen {
             this.itemSlot = new ConfigSlot(width / 2 - 100, height / 2 - 40, 0, this.font, menu);
         }
 
-        // 添加配置槽的添加按钮
+        // 添加统一的添加按钮（用于搜索框和配置槽）
         addRenderableWidget(Button.builder(Component.literal("+"), button -> {
-                    if (!itemSlot.getItem().isEmpty()) {
+                    if (!itemInput.getValue().isEmpty() && !countInput.getValue().isEmpty()) {
+                        // 如果搜索框有输入，使用搜索框的添加逻辑
+                        try {
+                            // 先验证数量
+                            int count;
+                            try {
+                                count = Integer.parseInt(countInput.getValue());
+                                if (count <= 0 || count > 64) {
+                                    minecraft.player.sendSystemMessage(Component.literal("物品数量必须在1-64之间"));
+                                    return;
+                                }
+                            } catch (NumberFormatException e) {
+                                minecraft.player.sendSystemMessage(Component.literal("请输入有效的物品数量"));
+                                return;
+                            }
+
+                            // 验证物品ID
+                            try {
+                                ResourceLocation itemId = new ResourceLocation(itemInput.getValue());
+                                Item item = ItemHooks.getItemOrThrow(itemId.getNamespace(), itemId.getPath());
+
+                                ItemStack itemStack = new ItemStack(item, count);
+                                addItemToCard(itemStack);
+                                if (this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
+                                    menu.getItemHandler().saveData();
+                                }
+                                itemInput.setValue("");
+                                countInput.setValue("");
+                            } catch (ResourceLocationException e) {
+                                minecraft.player.sendSystemMessage(Component.literal("物品命名空间格式无效"));
+                            } catch (Exception e) {
+                                minecraft.player.sendSystemMessage(Component.literal("找不到指定的物品"));
+                            }
+                        } catch (Exception e) {
+                            minecraft.player.sendSystemMessage(Component.literal("添加物品时发生错误"));
+                        }
+                    } else if (!itemSlot.getItem().isEmpty()) {
+                        // 如果配置槽有物品，使用配置槽的添加逻辑
                         addItemToCard(itemSlot.getItem());
                         itemSlot.set(ItemStack.EMPTY);
                         if (this.minecraft.player.containerMenu instanceof GunViewMenu menu) {

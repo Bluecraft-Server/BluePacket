@@ -84,9 +84,9 @@ public class CardItemConfigScreen extends Screen {
 
         // 新增：删除槽位输入框
         this.deleteSlotInput = new EditBox(font,
-                width / 2 - 50, height / 2 - 40, 60, 20,
+                width / 2 + 20, height / 2 - 40, 60, 20,
                 Component.literal("slot index"));
-        this.deleteSlotInput.setSuggestion("Slot Index");
+        this.deleteSlotInput.setSuggestion("slot index");
 
         addRenderableWidget(itemInput);
         addRenderableWidget(countInput);
@@ -154,27 +154,21 @@ public class CardItemConfigScreen extends Screen {
                                 ));
                             }
 
-                            if (this.minecraft != null && this.minecraft.player != null && this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
+                            if (this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
                                 menu.getItemHandler().saveData();
                             }
                             deleteSlotInput.setValue("");
-                            if (minecraft != null) {
-                                minecraft.player.sendSystemMessage(Component.literal("物品已成功删除"));
-                            }
+                            minecraft.player.sendSystemMessage(Component.literal("物品已成功删除"));
                         } else {
                             minecraft.player.sendSystemMessage(Component.literal("无效的槽位索引"));
                         }
                     } catch (NumberFormatException e) {
-                        if (minecraft != null) {
-                            minecraft.player.sendSystemMessage(Component.literal("请输入有效的槽位索引数字"));
-                        }
+                        minecraft.player.sendSystemMessage(Component.literal("请输入有效的槽位索引数字"));
                     } catch (Exception e) {
-                        if (minecraft != null) {
-                            minecraft.player.sendSystemMessage(Component.literal("删除物品时发生错误"));
-                        }
+                        minecraft.player.sendSystemMessage(Component.literal("删除物品时发生错误"));
                     }
                 })
-                .pos(width / 2 + 20, height / 2 - 40)
+                .pos(width / 2 - 10 , height / 2 - 40)
                 .size(20, 20)
                 .build());
 
@@ -192,7 +186,7 @@ public class CardItemConfigScreen extends Screen {
                         }
                     }
                 })
-                .pos(width / 2 - 75, height / 2 - 40)
+                .pos(width / 2 + 85, height / 2 - 40)
                 .size(20, 20)
                 .build());
 
@@ -259,24 +253,50 @@ public class CardItemConfigScreen extends Screen {
 
     private void addItemToCard(ItemStack item) {
         ICardInventory inventory = card.getInventory();
+        int targetSlot = -1;
 
-        // 找到第一个空槽位
-        for (int i = 0; i < inventory.getSlots(); i++) {
-            ItemStack existingStack = inventory.getStackInSlot(i);
-            if (existingStack.isEmpty()) {
-                // 将物品放入该槽位
-                inventory.setStackInSlot(i, item);
-
-                // 发送更新包到服务器
-                if (this.minecraft != null && this.minecraft.player != null && this.minecraft.level != null && this.minecraft.level.isClientSide() && this.minecraft.player.getServer() != null) {
-                    ViewLauncher.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
-                            card.getName(),
-                            i,
-                            item.getItem().getDefaultInstance()
-                    ));
+        // 检查是否有手动输入的槽位索引
+        try {
+            String slotIndexStr = deleteSlotInput.getValue().trim();
+            if (!slotIndexStr.isEmpty()) {
+                int inputSlot = Integer.parseInt(slotIndexStr);
+                if (inputSlot >= 0 && inputSlot < inventory.getSlots()) {
+                    targetSlot = inputSlot;
+                } else {
+                    minecraft.player.sendSystemMessage(Component.literal("无效的槽位索引，将使用自动递增槽位"));
                 }
+            }
+        } catch (NumberFormatException ignored) {
+            // 如果解析失败，继续使用自动递增槽位
+        }
 
-                break;
+        // 如果没有有效的手动槽位，寻找第一个空槽位
+        if (targetSlot == -1) {
+            for (int i = 0; i < inventory.getSlots(); i++) {
+                if (inventory.getStackInSlot(i).isEmpty()) {
+                    targetSlot = i;
+                    break;
+                }
+            }
+        }
+
+        // 如果找到有效槽位，添加物品
+        if (targetSlot != -1) {
+            inventory.setStackInSlot(targetSlot, item);
+
+            // 发送更新包到服务器
+            if (this.minecraft != null && this.minecraft.player != null &&
+                    this.minecraft.level != null && this.minecraft.level.isClientSide() &&
+                    this.minecraft.player.getServer() != null) {
+                ViewLauncher.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
+                        card.getName(),
+                        targetSlot,
+                        item.getItem().getDefaultInstance()
+                ));
+            }
+        } else {
+            if (minecraft != null) {
+                minecraft.player.sendSystemMessage(Component.literal("没有可用的槽位"));
             }
         }
     }

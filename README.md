@@ -1,4 +1,6 @@
-# View Launcher 一个自定义发放物品的库
+# CompatDepot 一个自定义发放物品的库
+
+![logo](img/logo.png)
 
 [Bluecraft程序开发部QQ群组](https://qm.qq.com/q/UTIXXOqOEq)，欢迎加入和讨论！
 

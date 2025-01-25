@@ -40,6 +40,8 @@ public class GunViewMenu extends AbstractContainerMenu {
     private static final int SLOT_SIZE = 110; // 10 * 10
     private static final int GRID_END_INDEX = GRID_START_INDEX + SLOT_SIZE - 1;
     public static final Map<String, ICardInventory> cardInventories = new HashMap<>();
+    public final List<ICard> cards = new ArrayList<>();
+    public ICard currentCard;
     private final BitSet takenSlots;  // 记录已取出过物品的槽位
 
     // 游戏状态
@@ -47,10 +49,8 @@ public class GunViewMenu extends AbstractContainerMenu {
     public final Player entity;
     public int x, y, z;
     private final List<ICardInventory> inventories;
-    public final List<ICard> cards;
     public int currentPageIndex = 0;
     public int selectedCardIndex = 0;
-    public ICard currentCard;
 
     // 物品管理
     public final Inventory inventory;
@@ -58,7 +58,6 @@ public class GunViewMenu extends AbstractContainerMenu {
 
     public GunViewMenu(int id, Inventory playerInventory) {
         super(MenuRegistration.GUN_VIEW_MENU.get(), id);
-
 
         // 初始化基本属性
         this.entity = playerInventory.player;
@@ -68,7 +67,6 @@ public class GunViewMenu extends AbstractContainerMenu {
 
         this.inventories = Cards.CARD_INVENTORIES;
 
-
         // 初始化位置信息
         BlockPos pos = playerInventory.player.blockPosition();
         this.x = pos.getX();
@@ -76,24 +74,14 @@ public class GunViewMenu extends AbstractContainerMenu {
         this.z = pos.getZ();
 
         // 初始化物品处理器，使用完整大小以匹配槽位索引
-        // 创建物品处理器
         this.itemHandler = new PersistentItemHandler(1100, GRID_START_INDEX, GRID_END_INDEX, this);
 
         // 加载保存的数据
         this.itemHandler.loadData();
 
-        // 初始化卡片系统
-        this.cards = initializeCards();
-        this.currentCard = !cards.isEmpty() ? cards.get(0) : null;
-
         // 设置槽位
         setupGridSlots();
         setupPlayerInventorySlots(playerInventory);
-
-        // 初始化第一页物品
-        if (currentCard != null) {
-            loadCurrentPage();
-        }
     }
 
     public void markSlotTaken(int slotIndex) {
@@ -119,20 +107,6 @@ public class GunViewMenu extends AbstractContainerMenu {
             BitSet.valueOf(bytes).stream().forEach(takenSlots::set);
             broadcastChanges(); // 通知客户端更新
         }
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    private List<ICard> initializeCards() {
-        List<ICard> cards = new ArrayList<>();
-        for (int i = 0; i < inventories.size(); i++) {
-            cards.add(new GeneralCard(
-                    inventories.get(i),
-                    "card_" + i,
-                    new ResourceLocation(CombatDepot.MODID, "textures/gui/card_" + i + ".png"),
-                    this::onPageChanged
-            ));
-        }
-        return cards;
     }
 
     // 保存数据
@@ -185,13 +159,6 @@ public class GunViewMenu extends AbstractContainerMenu {
         });
     }
 
-    private void onPageChanged(int newPageIndex) {
-        if (currentCard != null && newPageIndex >= 0 && newPageIndex < currentCard.getTotalPages()) {
-            currentPageIndex = newPageIndex;
-            loadCurrentPage();
-        }
-    }
-
     private void setupGridSlots() {
         int slotCount = 0;
         for (int row = 0; row < GRID_ROWS && slotCount < SLOT_SIZE; row++) {
@@ -226,12 +193,7 @@ public class GunViewMenu extends AbstractContainerMenu {
         }
     }
 
-    public void loadCurrentPage() {
-        if (currentCard == null) return;
-
-        Page page = currentCard.getPage(currentPageIndex);
-        List<ItemStack> items = page.items();
-
+    public void loadCurrentPage(List<ItemStack> items) {
         // 更新槽位，考虑偏移量
         for (int i = 0; i < Math.min(items.size(), SLOT_SIZE); i++) {
             itemHandler.setStackInSlot(i + GRID_START_INDEX, items.get(i).copy());
@@ -243,15 +205,6 @@ public class GunViewMenu extends AbstractContainerMenu {
         }
 
         broadcastChanges();
-    }
-
-    public void selectCard(int index) {
-        if (index >= 0 && index < cards.size() && index != selectedCardIndex) {
-            selectedCardIndex = index;
-            currentCard = cards.get(index);
-            currentPageIndex = 0;
-            loadCurrentPage();
-        }
     }
 
     @Override
@@ -304,4 +257,5 @@ public class GunViewMenu extends AbstractContainerMenu {
     public PersistentItemHandler getItemHandler() {
         return itemHandler;
     }
+
 }

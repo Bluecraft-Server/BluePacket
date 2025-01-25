@@ -55,9 +55,7 @@ public record CardSelectionMessage(int selectedIndex, int x, int y, int z) {
                 if (!(container instanceof GunViewMenu menu)) return;
 
                 // Validate card selection
-                if (menu.cards == null ||
-                        message.selectedIndex < 0 ||
-                        message.selectedIndex >= menu.cards.size()) {
+                if (message.selectedIndex < 0 || message.selectedIndex >= menu.cards.size()) {
                     CombatDepot.LOGGER.warn("Invalid card index received: {}", message.selectedIndex);
                     return;
                 }

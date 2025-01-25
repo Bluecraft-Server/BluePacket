@@ -1,6 +1,7 @@
 package top.bluecraft.viewlauncher.network;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
@@ -51,37 +52,18 @@ public class ClientboundCardSelectionPacket{
         public static void handle(ClientboundCardSelectionPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
             NetworkEvent.Context context = contextSupplier.get();
             context.enqueueWork(() -> {
-                // 确保我们在客户端
-                if (!context.getDirection().getReceptionSide().isClient()) return;
-
                 Minecraft minecraft = Minecraft.getInstance();
-                Player player = minecraft.player;
-                if (player == null) return;
-
-                // 获取当前打开的容器
-                if (!(player.containerMenu instanceof GunViewMenu menu)) return;
+                Screen currentScreen = minecraft.screen;
+                if (!(currentScreen instanceof GunViewScreen screen)) return;
 
                 // 验证卡片索引
-                if (packet.selectedIndex < 0 || packet.selectedIndex >= menu.cards.size()) {
+                if (packet.selectedIndex < 0 || packet.selectedIndex >= screen.getCards().size()) {
                     CombatDepot.LOGGER.warn("Invalid card index received from server: {}", packet.selectedIndex);
                     return;
                 }
 
                 // 更新客户端的选择
-                menu.selectedCardIndex = packet.selectedIndex;
-                menu.currentCard = menu.cards.get(packet.selectedIndex);
-
-                // 重置页面索引并加载第一页
-                menu.currentPageIndex = 0;
-                if (menu.currentCard != null) {
-                    menu.currentCard.switchToPage(0);
-                    menu.loadCurrentPage();
-                }
-
-                // 如果需要，更新UI
-                if (minecraft.screen instanceof GunViewScreen screen) {
-                    screen.updateCardSelection(packet.selectedIndex);
-                }
+                screen.updateCardSelection(packet.selectedIndex);
             });
             context.setPacketHandled(true);
         }

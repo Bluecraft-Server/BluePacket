@@ -10,6 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.GuiGraphics;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -18,7 +19,11 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.api.ICard;
+import top.bluecraft.viewlauncher.api.ICardInventory;
 import top.bluecraft.viewlauncher.client.menu.GunViewMenu;
+import top.bluecraft.viewlauncher.common.card.Cards;
+import top.bluecraft.viewlauncher.common.card.GeneralCard;
+import top.bluecraft.viewlauncher.common.page.Page;
 import top.bluecraft.viewlauncher.network.CardSelectionMessage;
 
 @OnlyIn(Dist.CLIENT)
@@ -36,7 +41,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	private static final int CARD_NAME_X = 14;        // 卡片名称X坐标
 	private static final int CARD_NAME_Y = 5;         // 卡片名称Y坐标
 
-    // 资源位置
+	// 资源位置
 	private static final ResourceLocation TEXTURE = new ResourceLocation(CombatDepot.MODID, "textures/gui/gun_view.png");
 
 	// 成员变量
@@ -45,18 +50,91 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	private final Player entity;
 	private final List<ICard> cards;
 	private final GunViewMenu container;
+	private ICard currentCard;
 
 	public GunViewScreen(GunViewMenu container, Inventory inventory, Component text) {
 		super(container, inventory, text);
+
 		this.world = container.world;
 		this.x = container.x;
 		this.y = container.y;
 		this.z = container.z;
+		this.currentCard = container.currentCard;
+		this.cards = container.cards;
 		this.entity = container.entity;
 		this.imageWidth = IMAGE_WIDTH;
 		this.imageHeight = IMAGE_HEIGHT;
-		this.cards = container.cards;
 		this.container = container;
+		initializeCards();
+	}
+
+	private void initializeCards() {
+		List<ICardInventory> inventories = Cards.CARD_INVENTORIES;
+		for (int i = 0; i < inventories.size(); i++) {
+			cards.add(new GeneralCard(
+					inventories.get(i),
+					"card_" + i,
+					new ResourceLocation(CombatDepot.MODID, "textures/gui/card_" + i + ".png"),
+					this::onPageChanged
+			));
+		}
+		this.currentCard = !cards.isEmpty() ? cards.get(0) : null;
+	}
+
+	private void onPageChanged(int newPageIndex) {
+		if (currentCard != null && newPageIndex >= 0 && newPageIndex < currentCard.getTotalPages()) {
+			menu.currentPageIndex = newPageIndex;
+			loadCurrentPage();
+		}
+	}
+
+	private void loadCurrentPage() {
+		if (currentCard == null) return;
+
+		Page page = currentCard.getPage(menu.currentPageIndex);
+		menu.loadCurrentPage(page.items());
+	}
+
+	@Override
+	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		if (button == 0) { // 左键点击
+			// 检查卡片选择
+			if (handleCardSelection(mouseX, mouseY)) {
+				return true;
+			}
+		}
+		return super.mouseClicked(mouseX, mouseY, button);
+	}
+
+	private boolean handleCardSelection(double mouseX, double mouseY) {
+		int startX = getCardStartX();
+		int startY = getCardStartY();
+
+		// 检查每个卡片
+		for (int i = 0; i < cards.size(); i++) {
+			int cardX = startX + i * (CARD_WIDTH);
+
+			if (isMouseOverCard(mouseX, mouseY, cardX, startY)) {
+				if (menu.selectedCardIndex != i) {
+					selectCard(i);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private void selectCard(int index) {
+		menu.selectedCardIndex = index;
+		currentCard = cards.get(index);
+		menu.currentPageIndex = 0;
+
+		CombatDepot.PACKET_HANDLER.sendToServer(
+				new CardSelectionMessage(index, menu.x, menu.y, menu.z)
+		);
+
+		// 加载新选中卡片的第一页
+		loadCurrentPage();
 	}
 
 	@Override
@@ -97,8 +175,8 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	}
 
 	private void renderCurrentCardInfo(GuiGraphics guiGraphics) {
-		if (menu.currentCard != null) {
-			menu.currentCard.renderPageInfo(guiGraphics, font,
+		if (currentCard != null) {
+			currentCard.renderPageInfo(guiGraphics, font,
 					leftPos + imageWidth / 2 + imageWidth / 4,
 					topPos + PAGE_INFO_Y_OFFSET);
 		}
@@ -114,41 +192,6 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 				imageWidth, imageHeight, imageWidth, imageHeight);
 
 		RenderSystem.disableBlend();
-	}
-
-	@Override
-	public boolean mouseClicked(double mouseX, double mouseY, int button) {
-		if (button == 0) { // 左键点击
-			// 检查卡片选择
-			if (handleCardSelection(mouseX, mouseY)) {
-				return true;
-			}
-		}
-		return super.mouseClicked(mouseX, mouseY, button);
-	}
-
-	private boolean handleCardSelection(double mouseX, double mouseY) {
-		int startX = getCardStartX();
-		int startY = getCardStartY();
-
-		// 检查每个卡片
-		for (int i = 0; i < cards.size(); i++) {
-			int cardX = startX + i * (CARD_WIDTH);
-
-            if (isMouseOverCard(mouseX, mouseY, cardX, startY)) {
-				if (menu.selectedCardIndex != i) {
-					menu.selectedCardIndex = i;
-					menu.currentCard = cards.get(i);
-					menu.currentCard.switchToPage(0);
-
-					CombatDepot.PACKET_HANDLER.sendToServer(
-							new CardSelectionMessage(i, x, y, z)
-					);
-					return true;
-				}
-			}
-		}
-		return false;
 	}
 
 	@Override
@@ -170,8 +213,9 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 			this.addRenderableWidget(configButton);
 		}
 
-		if (container.currentCard != null) {
-			container.currentCard.addPageButtons(this, width / 2, height - 40);  // 调整位置参数
+		if (currentCard != null) {
+			currentCard.addPageButtons(this, width / 2, height - 40);
+			loadCurrentPage(); // 初始加载第一页
 		}
 	}
 
@@ -197,29 +241,15 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 			return;
 		}
 
-		// 更新菜单状态
-		menu.selectedCardIndex = newIndex;
-		menu.currentCard = cards.get(newIndex);
-		menu.currentPageIndex = 0;  // 重置到第一页
+		selectCard(newIndex);
 
-		// 重新加载物品
-		menu.loadCurrentPage();
-
-		// 播放选择音效（可选）
+		// 播放选择音效
 		if (minecraft != null && minecraft.player != null) {
 			minecraft.player.playSound(
 					SoundEvents.UI_BUTTON_CLICK.get(),
 					1.0F,
 					1.0F
 			);
-		}
-
-		// 强制重新渲染
-		if (minecraft != null) {
-			minecraft.tell(() -> {
-				// 确保在主线程中更新UI
-				this.init(minecraft, this.width, this.height);
-			});
 		}
 	}
 
@@ -259,4 +289,12 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	public int getY() { return y; }
 	public int getZ() { return z; }
 	public Player getEntity() { return entity; }
+
+	public List<ICard> getCards() {
+		return cards;
+	}
+
+	public ICard getCurrentCard() {
+		return currentCard;
+	}
 }

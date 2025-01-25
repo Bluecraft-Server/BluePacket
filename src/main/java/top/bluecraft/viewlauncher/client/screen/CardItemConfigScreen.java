@@ -108,9 +108,9 @@ public class CardItemConfigScreen extends Screen {
                             // 发送更新包到服务器
                             if (this.minecraft != null && this.minecraft.player != null &&
                                     this.minecraft.level != null && this.minecraft.level.isClientSide() &&
-                                    this.minecraft.player.getServer() != null) {
+                                    this.minecraft.player.getServer() != null && minecraft.player.containerMenu instanceof GunViewMenu menu) {
                                 CombatDepot.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
-                                        card.getName(),
+                                        menu.selectedCardIndex,
                                         slotIndex,
                                         ItemStack.EMPTY  // 发送空物品栈
                                 ));
@@ -286,9 +286,9 @@ public class CardItemConfigScreen extends Screen {
             // 发送更新包到服务器
             if (this.minecraft != null && this.minecraft.player != null &&
                     this.minecraft.level != null && this.minecraft.level.isClientSide() &&
-                    this.minecraft.player.getServer() != null) {
+                    this.minecraft.player.getServer() != null && minecraft.player.containerMenu instanceof GunViewMenu menu) {
                 CombatDepot.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
-                        card.getName(),
+                        menu.selectedCardIndex,
                         targetSlot,
                         item.getItem().getDefaultInstance()
                 ));

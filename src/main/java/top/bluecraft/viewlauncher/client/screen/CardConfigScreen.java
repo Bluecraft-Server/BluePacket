@@ -47,7 +47,7 @@ public class CardConfigScreen extends Screen {
     protected void init() {
         super.init();
 
-        List<ICard> cards = parentScreen.getMenu().cards;
+        List<ICard> cards = parentScreen.getCards();
         int startX = (width - (BUTTON_WIDTH * BUTTONS_PER_ROW + BUTTON_SPACING)) / 2;
         int startY = 50;
 

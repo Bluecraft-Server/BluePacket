@@ -6,12 +6,15 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.api.ICard;
 
 import java.util.List;
 
+@OnlyIn(Dist.CLIENT)
 public class CardEditScreen extends Screen {
     private final CardConfigScreen parentScreen;
     private final ICard card;

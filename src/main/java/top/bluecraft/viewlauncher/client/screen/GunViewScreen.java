@@ -13,12 +13,15 @@ import net.minecraft.client.gui.GuiGraphics;
 import java.util.List;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.api.ICard;
 import top.bluecraft.viewlauncher.client.menu.GunViewMenu;
 import top.bluecraft.viewlauncher.network.CardSelectionMessage;
 
+@OnlyIn(Dist.CLIENT)
 public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	// 常量定义
 	public static final int IMAGE_WIDTH = 400;

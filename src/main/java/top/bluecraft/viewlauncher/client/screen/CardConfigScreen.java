@@ -4,12 +4,15 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.api.ICard;
 
 import java.util.List;
 
+@OnlyIn(Dist.CLIENT)
 public class CardConfigScreen extends Screen {
     private final GunViewScreen parentScreen;
     private static final int BUTTONS_PER_ROW = 2;

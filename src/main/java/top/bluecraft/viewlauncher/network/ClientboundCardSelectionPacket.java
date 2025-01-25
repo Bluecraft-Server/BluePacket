@@ -3,6 +3,8 @@ package top.bluecraft.viewlauncher.network;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.NetworkEvent;
 import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.client.menu.GunViewMenu;
@@ -10,6 +12,7 @@ import top.bluecraft.viewlauncher.client.screen.GunViewScreen;
 
 import java.util.function.Supplier;
 
+@OnlyIn(Dist.CLIENT)
 public class ClientboundCardSelectionPacket{
     private final int selectedIndex;
     private final int x, y, z;

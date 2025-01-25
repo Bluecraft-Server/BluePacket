@@ -9,6 +9,8 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.viewlauncher.CombatDepot;
@@ -119,6 +121,7 @@ public class GunViewMenu extends AbstractContainerMenu {
         }
     }
 
+    @OnlyIn(Dist.CLIENT)
     private List<ICard> initializeCards() {
         List<ICard> cards = new ArrayList<>();
         for (int i = 0; i < inventories.size(); i++) {

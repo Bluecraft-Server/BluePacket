@@ -15,6 +15,8 @@ import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.api.ICard;
 import top.bluecraft.viewlauncher.api.ICardInventory;
 import top.bluecraft.viewlauncher.common.capability.CardInventoryCapability;
+import top.bluecraft.viewlauncher.common.card.Card;
+import top.bluecraft.viewlauncher.common.card.Cards;
 import top.bluecraft.viewlauncher.common.card.GeneralCard;
 import top.bluecraft.viewlauncher.common.item.TerminalCapabilityProvider;
 import top.bluecraft.viewlauncher.common.page.Page;
@@ -37,14 +39,12 @@ public class GunViewMenu extends AbstractContainerMenu {
     private static final int GRID_END_INDEX = GRID_START_INDEX + SLOT_SIZE - 1;
     public static final Map<String, ICardInventory> cardInventories = new HashMap<>();
     private final BitSet takenSlots;  // 记录已取出过物品的槽位
-    public static final ICardInventory MAIN_WEAPON_INV = new CardInventoryCapability(1100, "main_weapon");
-
-    public static final ICapabilityProvider CAPABILITY_PROVIDER = new TerminalCapabilityProvider(MAIN_WEAPON_INV);
 
     // 游戏状态
     public final Level world;
     public final Player entity;
     public int x, y, z;
+    private final List<ICardInventory> inventories;
     public final List<ICard> cards;
     public int currentPageIndex = 0;
     public int selectedCardIndex = 0;
@@ -63,6 +63,8 @@ public class GunViewMenu extends AbstractContainerMenu {
         this.world = entity.level();
         this.inventory = playerInventory;
         this.takenSlots = new BitSet(SLOT_SIZE);
+
+        this.inventories = Cards.CARD_INVENTORIES;
 
 
         // 初始化位置信息
@@ -118,12 +120,16 @@ public class GunViewMenu extends AbstractContainerMenu {
     }
 
     private List<ICard> initializeCards() {
-        List<ICard> cardList = new ArrayList<>();
-
-        cardList.add(new GeneralCard(MAIN_WEAPON_INV, "main_weapon",
-                new ResourceLocation(CombatDepot.MODID, "textures/gui/main_weapon.png"),
-                this::onPageChanged));
-        return cardList;
+        List<ICard> cards = new ArrayList<>();
+        for (int i = 0; i < inventories.size(); i++) {
+            cards.add(new GeneralCard(
+                    inventories.get(i),
+                    "card_" + i,
+                    new ResourceLocation(CombatDepot.MODID, "textures/gui/card_" + i + ".png"),
+                    this::onPageChanged
+            ));
+        }
+        return cards;
     }
 
     // 保存数据

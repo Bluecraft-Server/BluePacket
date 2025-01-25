@@ -28,6 +28,10 @@ import org.slf4j.Logger;
 import top.bluecraft.viewlauncher.client.modelprovider.ModelProvider;
 import top.bluecraft.viewlauncher.init.ItemRegistration;
 import top.bluecraft.viewlauncher.init.MenuRegistration;
+import top.bluecraft.viewlauncher.network.AddItemToCardMessage;
+import top.bluecraft.viewlauncher.network.CardSelectionMessage;
+import top.bluecraft.viewlauncher.network.ClientboundCardSelectionPacket;
+import top.bluecraft.viewlauncher.network.SlotTakeMessage;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -63,6 +67,14 @@ public class CombatDepot {
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("HELLO FROM COMMON SETUP");
         LOGGER.info("DIRT BLOCK >> {}", ForgeRegistries.BLOCKS.getKey(Blocks.DIRT));
+        event.enqueueWork(
+                () -> {
+                    CombatDepot.addNetworkMessage(SlotTakeMessage.class, SlotTakeMessage::encode, SlotTakeMessage::decode, SlotTakeMessage.Handler::handle);
+                    CombatDepot.addNetworkMessage(ClientboundCardSelectionPacket.class, ClientboundCardSelectionPacket::encode, ClientboundCardSelectionPacket::decode, ClientboundCardSelectionPacket.Handler::handle);
+                    CombatDepot.addNetworkMessage(CardSelectionMessage.class, CardSelectionMessage::encode, CardSelectionMessage::decode, CardSelectionMessage::handle);
+                    CombatDepot.addNetworkMessage(AddItemToCardMessage.class, AddItemToCardMessage::encode, AddItemToCardMessage::decode, AddItemToCardMessage.Handler::handle);
+                }
+        );
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {

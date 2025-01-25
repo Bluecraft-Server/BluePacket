@@ -113,7 +113,7 @@ public class CardItemConfigScreen extends Screen {
                                 ));
                             }
 
-                            if (this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
+                            if (this.minecraft.player != null && this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
                                 menu.getItemHandler().saveData();
                             }
                             deleteSlotInput.setValue("");

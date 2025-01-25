@@ -77,7 +77,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		// 水平渲染所有卡片
 		for (int i = 0; i < cards.size(); i++) {
 			ICard card = cards.get(i);
-			int cardX = startX + i * (CARD_WIDTH + CARD_SPACING);  // 每个卡片向右偏移
+			int cardX = startX + i * (CARD_WIDTH );  // 每个卡片向右偏移
             // 保持相同的Y坐标
 
             // 渲染卡片
@@ -130,7 +130,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 
 		// 检查每个卡片
 		for (int i = 0; i < cards.size(); i++) {
-			int cardX = startX + i * (CARD_WIDTH + CARD_SPACING);
+			int cardX = startX + i * (CARD_WIDTH);
 
             if (isMouseOverCard(mouseX, mouseY, cardX, startY)) {
 				if (menu.selectedCardIndex != i) {

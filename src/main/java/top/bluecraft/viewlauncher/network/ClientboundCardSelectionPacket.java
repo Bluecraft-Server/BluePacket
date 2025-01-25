@@ -15,10 +15,10 @@ public class ClientboundCardSelectionPacket{
     private final int x, y, z;
 
     public ClientboundCardSelectionPacket(CardSelectionMessage message) {
-        this.selectedIndex = message.getSelectedIndex();
-        this.x = message.getX();
-        this.y = message.getY();
-        this.z = message.getZ();
+        this.selectedIndex = message.selectedIndex();
+        this.x = message.x();
+        this.y = message.y();
+        this.z = message.z();
     }
 
     public ClientboundCardSelectionPacket(int selectedIndex, int x, int y, int z) {

@@ -147,7 +147,7 @@ public abstract class Card implements ICard {
 
     public void addPageButtons(Screen screen, int centerX, int y) {
         // 箭头按钮的Y坐标
-        int arrowY = y + 15;
+        int arrowY = y + 20;
 
         // 左箭头按钮
             screen.addRenderableWidget(Button.builder(Component.literal("<"), button -> {

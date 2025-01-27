@@ -23,12 +23,7 @@ public class GunViewSlot extends SlotItemHandler {
 
     @Override
     public boolean mayPickup(@NotNull Player player) {
-        // 如果玩家有权限，始终可以取出
-        if (player.hasPermissions(2)) {
-            return true;
-        }
-        // 如果槽位已被取出过，则禁止取出
-        return !menu.isSlotTaken(getSlotIndex());
+        return true;
     }
 
     @Override
@@ -41,7 +36,8 @@ public class GunViewSlot extends SlotItemHandler {
         // 标记槽位已被取出
         menu.markSlotTaken(getSlotIndex());
 
-        if (menu.world.isClientSide() && menu.entity.getServer() != null) {
+        // 只在客户端发送消息
+        if (player.level().isClientSide()) {
             CombatDepot.PACKET_HANDLER.sendToServer(new SlotTakeMessage(getSlotIndex()));
         }
     }

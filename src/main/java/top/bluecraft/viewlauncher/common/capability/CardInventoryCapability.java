@@ -3,14 +3,17 @@ package top.bluecraft.viewlauncher.common.capability;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
+import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.api.ICardInventory;
 import top.bluecraft.viewlauncher.client.menu.GunViewMenu;
 
-public class CardInventoryCapability implements ICardInventory {
+public class CardInventoryCapability implements ICardInventory, IItemHandlerModifiable {
     private final ItemStackHandler inventory;
     private final LazyOptional<ICardInventory> holder;
+    private final String name;
 
     public CardInventoryCapability(int size, String name) {
         this.inventory = new ItemStackHandler(size) {
@@ -21,6 +24,7 @@ public class CardInventoryCapability implements ICardInventory {
             }
         };
         this.holder = LazyOptional.of(() -> this);
+        this.name = name;
         GunViewMenu.cardInventories.put(name, this);
     }
 
@@ -59,12 +63,10 @@ public class CardInventoryCapability implements ICardInventory {
         return inventory.extractItem(slot, amount, simulate);
     }
 
-    @Override
     public CompoundTag serializeNBT() {
         return inventory.serializeNBT();
     }
 
-    @Override
     public void deserializeNBT(CompoundTag nbt) {
         inventory.deserializeNBT(nbt);
     }
@@ -75,6 +77,11 @@ public class CardInventoryCapability implements ICardInventory {
         for (int i = 0; i < inventory.getSlots(); i++) {
             inventory.setStackInSlot(i, ItemStack.EMPTY);
         }
+    }
+
+    @Override
+    public String getName() {
+        return name;
     }
 
     public LazyOptional<ICardInventory> getHolder() {

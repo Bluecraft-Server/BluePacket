@@ -26,15 +26,24 @@ public class TerminalProvider implements MenuProvider {
     public AbstractContainerMenu createMenu(int id, @NotNull Inventory inventory, @NotNull Player player) {
         GunViewMenu menu = new GunViewMenu(id, inventory);
 
-        // 如果物品有保存的数据，加载它
         CompoundTag tag = stack.getTag();
         if (tag != null && tag.contains("MenuData")) {
             CompoundTag menuTag = tag.getCompound("MenuData");
+
+            // Load inventories with a null check
             if (menuTag.contains("Inventories")) {
-                menu.loadInventories(menuTag.getCompound("Inventories"));
+                CompoundTag inventoriesTag = menuTag.getCompound("Inventories");
+                if (!inventoriesTag.isEmpty()) {
+                    GunViewMenu.loadInventories(inventoriesTag);
+                }
             }
+
+            // Load menu state with a null check
             if (tag.contains("MenuState")) {
-                menu.loadState(tag.getCompound("MenuState"));
+                CompoundTag stateTag = tag.getCompound("MenuState");
+                if (!stateTag.isEmpty()) {
+                    menu.loadState(stateTag);
+                }
             }
         }
 

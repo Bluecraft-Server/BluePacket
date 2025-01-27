@@ -11,4 +11,5 @@ public interface ICardInventory extends IItemHandler, INBTSerializable<CompoundT
     @NotNull ItemStack getStackInSlot(int slot);
     int getSlots();
     void clear();
+    String getName();
 }

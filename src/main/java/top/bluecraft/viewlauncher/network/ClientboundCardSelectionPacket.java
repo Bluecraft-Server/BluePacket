@@ -8,81 +8,46 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.NetworkEvent;
 import top.bluecraft.viewlauncher.CombatDepot;
+import top.bluecraft.viewlauncher.api.ICard;
 import top.bluecraft.viewlauncher.client.menu.GunViewMenu;
 import top.bluecraft.viewlauncher.client.screen.GunViewScreen;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 @OnlyIn(Dist.CLIENT)
-public class ClientboundCardSelectionPacket{
+public class ClientboundCardSelectionPacket {
     private final int selectedIndex;
-    private final int x, y, z;
 
-    public ClientboundCardSelectionPacket(CardSelectionMessage message) {
-        this.selectedIndex = message.selectedIndex();
-        this.x = message.x();
-        this.y = message.y();
-        this.z = message.z();
-    }
-
-    public ClientboundCardSelectionPacket(int selectedIndex, int x, int y, int z) {
+    public ClientboundCardSelectionPacket(int selectedIndex) {
         this.selectedIndex = selectedIndex;
-        this.x = x;
-        this.y = y;
-        this.z = z;
     }
 
     public static void encode(ClientboundCardSelectionPacket packet, FriendlyByteBuf buffer) {
-        buffer.writeInt(packet.selectedIndex);
-        buffer.writeInt(packet.x);
-        buffer.writeInt(packet.y);
-        buffer.writeInt(packet.z);
+        buffer.writeVarInt(packet.selectedIndex);
     }
 
     public static ClientboundCardSelectionPacket decode(FriendlyByteBuf buffer) {
-        return new ClientboundCardSelectionPacket(
-                buffer.readInt(),
-                buffer.readInt(),
-                buffer.readInt(),
-                buffer.readInt()
-        );
+        return new ClientboundCardSelectionPacket(buffer.readVarInt());
     }
 
-    public static class Handler {
-        public static void handle(ClientboundCardSelectionPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-            NetworkEvent.Context context = contextSupplier.get();
-            context.enqueueWork(() -> {
-                Minecraft minecraft = Minecraft.getInstance();
-                Screen currentScreen = minecraft.screen;
-                if (!(currentScreen instanceof GunViewScreen screen)) return;
-
+    public static void handle(ClientboundCardSelectionPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
+        NetworkEvent.Context context = contextSupplier.get();
+        context.enqueueWork(() -> {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.screen instanceof GunViewScreen screen) {
                 // 验证卡片索引
-                if (packet.selectedIndex < 0 || packet.selectedIndex >= screen.getCards().size()) {
-                    CombatDepot.LOGGER.warn("Invalid card index received from server: {}", packet.selectedIndex);
-                    return;
+                List<ICard> cards = screen.getCards();
+                if (packet.selectedIndex >= 0 && packet.selectedIndex < cards.size()) {
+                    // 更新客户端UI
+                    screen.updateCardSelection(packet.selectedIndex);
                 }
-
-                // 更新客户端的选择
-                screen.updateCardSelection(packet.selectedIndex);
-            });
-            context.setPacketHandled(true);
-        }
+            }
+        });
+        context.setPacketHandled(true);
     }
 
-    // Getters
     public int getSelectedIndex() {
         return selectedIndex;
-    }
-
-    public int getX() {
-        return x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public int getZ() {
-        return z;
     }
 }

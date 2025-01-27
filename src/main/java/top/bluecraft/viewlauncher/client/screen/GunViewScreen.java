@@ -10,6 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.GuiGraphics;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,11 +21,13 @@ import org.jetbrains.annotations.NotNull;
 import top.bluecraft.viewlauncher.CombatDepot;
 import top.bluecraft.viewlauncher.api.ICard;
 import top.bluecraft.viewlauncher.api.ICardInventory;
+import top.bluecraft.viewlauncher.client.Colors;
 import top.bluecraft.viewlauncher.client.menu.GunViewMenu;
 import top.bluecraft.viewlauncher.common.card.Cards;
 import top.bluecraft.viewlauncher.common.card.GeneralCard;
 import top.bluecraft.viewlauncher.common.page.Page;
 import top.bluecraft.viewlauncher.network.CardSelectionMessage;
+import top.bluecraft.viewlauncher.network.LoadPageMessage;
 
 @OnlyIn(Dist.CLIENT)
 public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
@@ -41,16 +44,28 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	private static final int CARD_NAME_X = 14;        // 卡片名称X坐标
 	private static final int CARD_NAME_Y = 5;         // 卡片名称Y坐标
 
+	private static final int VISIBLE_CARDS = 8; // 一次显示的卡片数量
+	private static final int ARROW_WIDTH = 12;
+	private static final int ARROW_HEIGHT = 12;
+	private static final int ARROW_PADDING = 4;
+
 	// 资源位置
 	private static final ResourceLocation TEXTURE = new ResourceLocation(CombatDepot.MODID, "textures/gui/gun_view.png");
+	private static final ResourceLocation ARROWS_TEXTURE = new ResourceLocation(CombatDepot.MODID, "textures/gui/arrows.png");
 
 	// 成员变量
 	private final Level world;
 	private final int x, y, z;
 	private final Player entity;
-	private final List<ICard> cards;
+	private final List<ICard> cards = new ArrayList<>();
 	private final GunViewMenu container;
 	private ICard currentCard;
+	private int currentPageIndex = 0;
+
+
+	private int currentCardOffset = 0;
+	private Button leftArrowButton;
+	private Button rightArrowButton;
 
 	public GunViewScreen(GunViewMenu container, Inventory inventory, Component text) {
 		super(container, inventory, text);
@@ -59,8 +74,12 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		this.x = container.x;
 		this.y = container.y;
 		this.z = container.z;
-		this.currentCard = container.currentCard;
-		this.cards = container.cards;
+		this.currentCard = !cards.isEmpty() ? cards.get(0) : null;
+
+		// 加载第一页
+		if (currentCard != null) {
+			loadCurrentPage();
+		}
 		this.entity = container.entity;
 		this.imageWidth = IMAGE_WIDTH;
 		this.imageHeight = IMAGE_HEIGHT;
@@ -83,7 +102,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 
 	private void onPageChanged(int newPageIndex) {
 		if (currentCard != null && newPageIndex >= 0 && newPageIndex < currentCard.getTotalPages()) {
-			menu.currentPageIndex = newPageIndex;
+			currentPageIndex = newPageIndex;
 			loadCurrentPage();
 		}
 	}
@@ -91,8 +110,10 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	private void loadCurrentPage() {
 		if (currentCard == null) return;
 
-		Page page = currentCard.getPage(menu.currentPageIndex);
-		menu.loadCurrentPage(page.items());
+		Page page = currentCard.getPage(currentPageIndex);
+		if (page != null) {
+			CombatDepot.PACKET_HANDLER.sendToServer(new LoadPageMessage(currentPageIndex, page.items()));
+		}
 	}
 
 	@Override
@@ -110,13 +131,14 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		int startX = getCardStartX();
 		int startY = getCardStartY();
 
-		// 检查每个卡片
-		for (int i = 0; i < cards.size(); i++) {
-			int cardX = startX + i * (CARD_WIDTH);
+		// 检查可见卡片范围内的点击
+		for (int i = 0; i < Math.min(VISIBLE_CARDS, cards.size() - currentCardOffset); i++) {
+			int cardIndex = i + currentCardOffset;
+			int cardX = startX + i * (CARD_WIDTH + CARD_SPACING);
 
 			if (isMouseOverCard(mouseX, mouseY, cardX, startY)) {
-				if (menu.selectedCardIndex != i) {
-					selectCard(i);
+				if (menu.selectedCardIndex != cardIndex) {
+					selectCard(cardIndex);
 					return true;
 				}
 			}
@@ -125,16 +147,23 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	}
 
 	private void selectCard(int index) {
-		menu.selectedCardIndex = index;
-		currentCard = cards.get(index);
-		menu.currentPageIndex = 0;
+		if (index >= 0 && index < cards.size()) {
+			// 更新客户端状态
+			menu.selectedCardIndex = index;
+			currentCard = cards.get(index);
+			currentPageIndex = 0;
 
-		CombatDepot.PACKET_HANDLER.sendToServer(
-				new CardSelectionMessage(index, menu.x, menu.y, menu.z)
-		);
+			// 通知服务端
+			CombatDepot.PACKET_HANDLER.sendToServer(new CardSelectionMessage(index));
 
-		// 加载新选中卡片的第一页
-		loadCurrentPage();
+			// 加载新选中卡片的第一页
+			loadCurrentPage();
+
+			// 播放音效
+			if (minecraft != null && minecraft.player != null) {
+				minecraft.player.playSound(SoundEvents.UI_BUTTON_CLICK.get(), 1.0F, 1.0F);
+			}
+		}
 	}
 
 	@Override
@@ -155,20 +184,20 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		int startX = getCardStartX();
 		int startY = getCardStartY();
 
-		// 水平渲染所有卡片
-		for (int i = 0; i < cards.size(); i++) {
-			ICard card = cards.get(i);
-			int cardX = startX + i * (CARD_WIDTH );  // 每个卡片向右偏移
-            // 保持相同的Y坐标
+		// 只渲染可见的卡片
+		for (int i = 0; i < Math.min(VISIBLE_CARDS, cards.size() - currentCardOffset); i++) {
+			int cardIndex = i + currentCardOffset;
+			ICard card = cards.get(cardIndex);
+			int cardX = startX + i * (CARD_WIDTH + CARD_SPACING);
 
-            // 渲染卡片
-			boolean isSelected = i == menu.selectedCardIndex;
+			// 渲染卡片
+			boolean isSelected = cardIndex == menu.selectedCardIndex;
 			card.render(guiGraphics, minecraft, cardX, startY, CARD_WIDTH, CARD_HEIGHT, isSelected);
 
 			// 渲染卡片名称提示
 			if (isMouseOverCard(mouseX, mouseY, cardX, startY)) {
 				guiGraphics.renderTooltip(font,
-						Component.literal(card.getName()),
+						Component.translatable("gui." + CombatDepot.MODID + "." + card.getName()),
 						mouseX, mouseY);
 			}
 		}
@@ -197,6 +226,10 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	@Override
 	protected void init() {
 		super.init();
+
+
+		addScrollButtons();
+
 		// 添加配置按钮
 		if (hasConfigPermission()) {
             // 设置按钮位置
@@ -216,6 +249,43 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		if (currentCard != null) {
 			currentCard.addPageButtons(this, width / 2, height - 40);
 			loadCurrentPage(); // 初始加载第一页
+		}
+	}
+
+	private void addScrollButtons() {
+		// 左箭头按钮
+		leftArrowButton = Button.builder(Component.literal("<"), (button) -> scrollCards(-1))
+				.pos(getCardStartX() + (VISIBLE_CARDS * (CARD_WIDTH + CARD_SPACING)), getCardStartY() + (CARD_HEIGHT - ARROW_HEIGHT) / 2)
+				.size(ARROW_WIDTH, ARROW_HEIGHT)
+				.build();
+
+		// 右箭头按钮
+		rightArrowButton = Button.builder(Component.literal(">"), (button) -> scrollCards(1))
+				.pos(getCardStartX() + (VISIBLE_CARDS * (CARD_WIDTH + CARD_SPACING)) + ARROW_PADDING * 3,
+						getCardStartY() + (CARD_HEIGHT - ARROW_HEIGHT) / 2)
+				.size(ARROW_WIDTH, ARROW_HEIGHT)
+				.build();
+
+		this.addRenderableWidget(leftArrowButton);
+		this.addRenderableWidget(rightArrowButton);
+
+		updateArrowButtonsState();
+	}
+
+	private void scrollCards(int direction) {
+		int newOffset = currentCardOffset + direction;
+		if (newOffset >= 0 && newOffset <= Math.max(0, cards.size() - VISIBLE_CARDS)) {
+			currentCardOffset = newOffset;
+			updateArrowButtonsState();
+		}
+	}
+
+	private void updateArrowButtonsState() {
+		if (leftArrowButton != null) {
+			leftArrowButton.active = currentCardOffset > 0;
+		}
+		if (rightArrowButton != null) {
+			rightArrowButton.active = currentCardOffset < Math.max(0, cards.size() - VISIBLE_CARDS);
 		}
 	}
 
@@ -267,7 +337,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 				Component.translatable("container.inventory"),
 				INVENTORY_LABEL_X,
 				INVENTORY_LABEL_Y,
-				4210752);
+				Colors.WHITE);
 	}
 
 	private boolean hasConfigPermission() {
@@ -297,4 +367,8 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	public ICard getCurrentCard() {
 		return currentCard;
 	}
+
+    public GunViewMenu getContainer() {
+        return container;
+    }
 }

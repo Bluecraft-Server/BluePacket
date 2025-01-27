@@ -5,6 +5,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.block.Blocks;
@@ -29,10 +30,7 @@ import org.slf4j.Logger;
 import top.bluecraft.viewlauncher.client.modelprovider.ModelProvider;
 import top.bluecraft.viewlauncher.init.ItemRegistration;
 import top.bluecraft.viewlauncher.init.MenuRegistration;
-import top.bluecraft.viewlauncher.network.AddItemToCardMessage;
-import top.bluecraft.viewlauncher.network.CardSelectionMessage;
-import top.bluecraft.viewlauncher.network.ClientboundCardSelectionPacket;
-import top.bluecraft.viewlauncher.network.SlotTakeMessage;
+import top.bluecraft.viewlauncher.network.*;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -41,7 +39,7 @@ import java.util.function.Supplier;
 @Mod(CombatDepot.MODID)
 public class CombatDepot {
 
-    public static final String MODID = "compatdepot";
+    public static final String MODID = "combatdepot";
     public static final Logger LOGGER = LogUtils.getLogger();
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
@@ -49,9 +47,9 @@ public class CombatDepot {
     public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 
     private static int messageID = 0;
-    public static final RegistryObject<CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("bcp_tab", () -> CreativeModeTab.builder().withTabsBefore(CreativeModeTabs.COMBAT).icon(ItemRegistration.GENERAL_TERMINAL.get()::getDefaultInstance).displayItems((parameters, output) -> {
+    public static final RegistryObject<CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("combat_depot_tab", () -> CreativeModeTab.builder().withTabsBefore(CreativeModeTabs.COMBAT).icon(ItemRegistration.GENERAL_TERMINAL.get()::getDefaultInstance).displayItems((parameters, output) -> {
         output.accept(ItemRegistration.GENERAL_TERMINAL.get());
-    }).build());
+    }).title(Component.translatable("tab.combatdepot.creativemodetab")).build());
 
     public CombatDepot() {
         @SuppressWarnings({"removal"})
@@ -67,7 +65,7 @@ public class CombatDepot {
 
     private void clientSetup(final FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
-            CombatDepot.addNetworkMessage(ClientboundCardSelectionPacket.class, ClientboundCardSelectionPacket::encode, ClientboundCardSelectionPacket::decode, ClientboundCardSelectionPacket.Handler::handle);
+            CombatDepot.addNetworkMessage(ClientboundCardSelectionPacket.class, ClientboundCardSelectionPacket::encode, ClientboundCardSelectionPacket::decode, ClientboundCardSelectionPacket::handle);
         });
     }
 
@@ -76,9 +74,10 @@ public class CombatDepot {
         LOGGER.info("DIRT BLOCK >> {}", ForgeRegistries.BLOCKS.getKey(Blocks.DIRT));
         event.enqueueWork(
                 () -> {
-                    CombatDepot.addNetworkMessage(SlotTakeMessage.class, SlotTakeMessage::encode, SlotTakeMessage::decode, SlotTakeMessage.Handler::handle);
+                    CombatDepot.addNetworkMessage(SlotTakeMessage.class, SlotTakeMessage::encode, SlotTakeMessage::decode, SlotTakeMessage::handle);
                     CombatDepot.addNetworkMessage(CardSelectionMessage.class, CardSelectionMessage::encode, CardSelectionMessage::decode, CardSelectionMessage::handle);
                     CombatDepot.addNetworkMessage(AddItemToCardMessage.class, AddItemToCardMessage::encode, AddItemToCardMessage::decode, AddItemToCardMessage::handle);
+                    CombatDepot.addNetworkMessage(LoadPageMessage.class, LoadPageMessage::encode, LoadPageMessage::decode, LoadPageMessage::handle);
                 }
         );
     }

@@ -12,7 +12,10 @@ public class ConfigSlot extends SlotItemHandler {
     private final Font font;
 
     public ConfigSlot(int x, int y, int index, Font font, GunViewMenu menu) {
-        super(menu.getItemHandler(), index, x, y);
+        super(menu.getInventories().stream()
+                .filter(inventory -> inventory.getSlots() == index)
+                .findFirst()
+                .orElse(null), index, x, y);
         this.x = x;
         this.y = y;
         this.font = font;

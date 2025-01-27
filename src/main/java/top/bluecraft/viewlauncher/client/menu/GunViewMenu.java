@@ -40,8 +40,6 @@ public class GunViewMenu extends AbstractContainerMenu {
     private static final int SLOT_SIZE = 110; // 10 * 10
     private static final int GRID_END_INDEX = GRID_START_INDEX + SLOT_SIZE - 1;
     public static final Map<String, ICardInventory> cardInventories = new HashMap<>();
-    public final List<ICard> cards = new ArrayList<>();
-    public ICard currentCard;
     private final BitSet takenSlots;  // 记录已取出过物品的槽位
 
     // 游戏状态
@@ -49,7 +47,6 @@ public class GunViewMenu extends AbstractContainerMenu {
     public final Player entity;
     public int x, y, z;
     private final List<ICardInventory> inventories;
-    public int currentPageIndex = 0;
     public int selectedCardIndex = 0;
 
     // 物品管理
@@ -194,16 +191,10 @@ public class GunViewMenu extends AbstractContainerMenu {
     }
 
     public void loadCurrentPage(List<ItemStack> items) {
-        // 更新槽位，考虑偏移量
-        for (int i = 0; i < Math.min(items.size(), SLOT_SIZE); i++) {
-            itemHandler.setStackInSlot(i + GRID_START_INDEX, items.get(i).copy());
+        for (int i = 0; i < SLOT_SIZE; i++) {
+            itemHandler.setStackInSlot(i, items != null && i < items.size() ?
+                    items.get(i).copy() : ItemStack.EMPTY);
         }
-
-        // 清空剩余槽位
-        for (int i = items.size(); i < SLOT_SIZE; i++) {
-            itemHandler.setStackInSlot(i + GRID_START_INDEX, ItemStack.EMPTY);
-        }
-
         broadcastChanges();
     }
 
@@ -254,8 +245,18 @@ public class GunViewMenu extends AbstractContainerMenu {
         return itemstack;
     }
 
+    public void selectCard(int index) {
+        if (index >= 0 && index < inventories.size() && index != selectedCardIndex) {
+            selectedCardIndex = index;
+            loadCurrentPage(Collections.emptyList()); // 切换卡片时先清空当前页面
+        }
+    }
+
     public PersistentItemHandler getItemHandler() {
         return itemHandler;
     }
 
+    public List<ICardInventory> getInventories() {
+        return inventories;
+    }
 }

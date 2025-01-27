@@ -116,9 +116,7 @@ public class CardItemConfigScreen extends Screen {
                                 ));
                             }
 
-                            if (this.minecraft.player != null && this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
-                                menu.getItemHandler().saveData();
-                            }
+                            updateInventorySerialize();
                             deleteSlotInput.setValue("");
                             minecraft.player.sendSystemMessage(Component.literal("物品已成功删除"));
                         } else {
@@ -163,9 +161,7 @@ public class CardItemConfigScreen extends Screen {
 
                                 ItemStack itemStack = new ItemStack(item, count);
                                 addItemToCard(itemStack);
-                                if (this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
-                                    menu.getItemHandler().saveData();
-                                }
+                                updateInventorySerialize();
                                 itemInput.setValue("");
                                 countInput.setValue("");
                             } catch (ResourceLocationException e) {
@@ -180,9 +176,7 @@ public class CardItemConfigScreen extends Screen {
                         // 如果配置槽有物品，使用配置槽的添加逻辑
                         addItemToCard(itemSlot.getItem());
                         itemSlot.set(ItemStack.EMPTY);
-                        if (this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
-                            menu.getItemHandler().saveData();
-                        }
+                        updateInventorySerialize();
                     }
                 })
                 .pos(width / 2 + 85, height / 2 - 40)
@@ -311,5 +305,12 @@ public class CardItemConfigScreen extends Screen {
         }
 
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private void updateInventorySerialize() {
+        if (this.minecraft != null && this.minecraft.player != null &&
+                this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
+            menu.getItemHandler().saveData();
+        }
     }
 }

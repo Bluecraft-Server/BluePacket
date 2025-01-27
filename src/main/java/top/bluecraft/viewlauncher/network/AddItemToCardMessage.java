@@ -9,6 +9,7 @@ import top.bluecraft.viewlauncher.api.ICard;
 import top.bluecraft.viewlauncher.api.ICardInventory;
 import top.bluecraft.viewlauncher.client.menu.GunViewMenu;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 public class AddItemToCardMessage {
@@ -44,22 +45,24 @@ public class AddItemToCardMessage {
 
             // 检查权限
             if (!player.hasPermissions(2)) {
-                player.sendSystemMessage(Component.translatable("gui.bluepacket.permission"));
+                player.sendSystemMessage(Component.translatable("message.combat_depot.no_permission"));
                 return;
             }
 
             // 获取玩家当前打开的容器
             if (player.containerMenu instanceof GunViewMenu menu) {
-                // 通过索引获取卡片
-                if (message.cardIndex >= 0 && message.cardIndex < menu.cards.size()) {
-                    ICard targetCard = menu.cards.get(message.cardIndex);
-                    ICardInventory inventory = targetCard.getInventory();
+                // 获取目标物品栏
+                List<ICardInventory> inventories = menu.getInventories();
+                if (message.cardIndex >= 0 && message.cardIndex < inventories.size()) {
+                    ICardInventory inventory = inventories.get(message.cardIndex);
 
-                    // 更新物品栏
-                    inventory.setStackInSlot(message.slot, message.stack);
-
-                    // 广播更改
-                    menu.broadcastChanges();
+                    // 验证槽位
+                    if (message.slot >= 0 && message.slot < inventory.getSlots()) {
+                        // 更新物品栏
+                        inventory.setStackInSlot(message.slot, message.stack);
+                        // 广播更改
+                        menu.broadcastChanges();
+                    }
                 }
             }
         });

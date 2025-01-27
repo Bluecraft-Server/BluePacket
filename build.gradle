@@ -183,6 +183,24 @@ tasks.named('jar', Jar).configure {
     finalizedBy 'reobfJar'
 }
 
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = "https://maven.pkg.github.com/你的用户名/仓库名"
+            credentials {
+                username = System.getenv("USERNAME")
+                password = System.getenv("TOKEN") 
+            }
+        }
+    }
+    publications {
+        gpr(MavenPublication) {
+            from(components.java)
+        }
+    }
+}
+
 processResources {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE // or EXCLUDE or FAIL or WARN
 }

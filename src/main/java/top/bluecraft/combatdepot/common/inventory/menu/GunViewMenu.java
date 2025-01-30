@@ -1,4 +1,4 @@
-package top.bluecraft.combatdepot.client.menu;
+package top.bluecraft.combatdepot.common.inventory.menu;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -244,6 +244,10 @@ public class GunViewMenu extends AbstractContainerMenu {
 
     public PersistentItemHandler getItemHandler() {
         return itemHandler;
+    }
+
+    public BitSet getTakenSlots() {
+        return takenSlots;
     }
 
     public List<ICardInventory> getInventories() {

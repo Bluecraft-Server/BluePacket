@@ -4,7 +4,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
-import top.bluecraft.combatdepot.client.menu.GunViewMenu;
+import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
 import java.util.ArrayList;
 import java.util.List;

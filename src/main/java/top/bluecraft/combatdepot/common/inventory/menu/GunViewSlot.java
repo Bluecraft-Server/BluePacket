@@ -1,4 +1,4 @@
-package top.bluecraft.combatdepot.client.menu;
+package top.bluecraft.combatdepot.common.inventory.menu;
 
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;

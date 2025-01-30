@@ -7,7 +7,7 @@ import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.api.ICardInventory;
-import top.bluecraft.combatdepot.client.menu.GunViewMenu;
+import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
 public class CardInventoryCapability implements ICardInventory, IItemHandlerModifiable {
     private final ItemStackHandler inventory;

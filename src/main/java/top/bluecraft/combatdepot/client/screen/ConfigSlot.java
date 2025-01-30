@@ -4,7 +4,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.SlotItemHandler;
-import top.bluecraft.combatdepot.client.menu.GunViewMenu;
+import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
 public class ConfigSlot extends SlotItemHandler {
     private final int x, y;

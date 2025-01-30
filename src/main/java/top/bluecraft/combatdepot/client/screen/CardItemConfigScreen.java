@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.api.ICardInventory;
-import top.bluecraft.combatdepot.client.menu.GunViewMenu;
+import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 import top.bluecraft.combatdepot.network.AddItemToCardMessage;
 import top.bluecraft.combatdepot.util.ItemHooks;
 

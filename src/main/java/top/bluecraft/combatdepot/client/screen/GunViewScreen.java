@@ -21,7 +21,7 @@ import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.api.ICardInventory;
 import top.bluecraft.combatdepot.client.Colors;
-import top.bluecraft.combatdepot.client.menu.GunViewMenu;
+import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 import top.bluecraft.combatdepot.common.card.Cards;
 import top.bluecraft.combatdepot.common.card.GeneralCard;
 import top.bluecraft.combatdepot.common.page.Page;

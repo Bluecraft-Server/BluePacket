@@ -1,4 +1,4 @@
-package top.bluecraft.combatdepot.client.menu;
+package top.bluecraft.combatdepot.common.inventory.menu;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;

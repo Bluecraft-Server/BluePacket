@@ -29,12 +29,12 @@ public abstract class Card implements ICard {
     // 成员变量
     private final ICardInventory inventory;
     private final String name;
-    private final ResourceLocation overlayTexture;
+    private final String overlayTexture;
     private final List<Page> pages;
     private int currentPageIndex;
     private final Consumer<Integer> onPageChange;
 
-    protected Card(ICardInventory inventory, String name, ResourceLocation overlayTexture, Consumer<Integer> onPageChange) {
+    protected Card(ICardInventory inventory, String name, String overlayTexture, Consumer<Integer> onPageChange) {
         this.inventory = inventory;
         this.name = name;
         this.overlayTexture = overlayTexture;
@@ -43,11 +43,6 @@ public abstract class Card implements ICard {
         this.onPageChange = onPageChange;
         initializePages();
     }
-
-    /**
-     * 获取背景材质位置，由子类实现
-     */
-    protected abstract ResourceLocation getBackgroundTexture();
 
     private void initializePages() {
         int totalItems = inventory.getSlots();
@@ -110,82 +105,12 @@ public abstract class Card implements ICard {
     }
 
     @Override
-    public void render(GuiGraphics graphics, Minecraft minecraft, int x, int y, int width, int height, boolean isSelected) {
-        if (minecraft == null) return;
-
-        try {
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            RenderSystem.enableBlend();
-            RenderSystem.defaultBlendFunc();
-
-            // 渲染背景
-            graphics.blit(getBackgroundTexture(), x, y, 0, 0, width, height, width, height);
-            // 渲染overlay
-            graphics.blit(overlayTexture, x, y, 0, 0, width, height, width, height);
-
-            // 如果被选中，渲染高亮效果
-            if (isSelected) {
-                graphics.fill(x, y, x + width, y + height, 0x80FFFFFF);
-            }
-
-            RenderSystem.disableBlend();
-        } catch (Exception e) {
-            CombatDepot.LOGGER.error("Failed to render card: {}", name, e);
-        }
-    }
-
-    @Override
-    public void renderPageInfo(GuiGraphics graphics, Font font, int centerX, int y) {
-        // 渲染页码
-        Component pageInfo = Component.translatable("gui." + CombatDepot.MODID + ".page", currentPageIndex + 1, getTotalPages());
-        graphics.drawCenteredString(font, pageInfo, centerX, y, PAGE_INFO_COLOR);
-
-        // 渲染卡片名称
-        graphics.drawCenteredString(font, Component.translatable("gui." + CombatDepot.MODID + "." + name), centerX, y - 15, PAGE_INFO_COLOR);
-
-    }
-
-    public void addPageButtons(Screen screen, int centerX, int y) {
-        // 箭头按钮的Y坐标
-        int arrowY = y + 20;
-
-        // 左箭头按钮
-            screen.addRenderableWidget(Button.builder(Component.literal("<"), button -> {
-                        if (currentPageIndex > 0) {
-                            switchToPage(currentPageIndex - 1);
-                        }
-                    })
-                    .pos(centerX - ARROW_SPACING - 10, arrowY - 10)  // 按钮位置，调整-10使按钮居中
-                    .size(20, 20)  // 按钮大小
-                    .build());
-
-
-        // 右箭头按钮
-            screen.addRenderableWidget(Button.builder(Component.literal(">"), button -> {
-                        if (currentPageIndex < getTotalPages() - 1) {
-                            switchToPage(currentPageIndex + 1);
-                        }
-                    })
-                    .pos(centerX + ARROW_SPACING - 10, arrowY - 10)
-                    .size(20, 20)
-                    .build());
-    }
-
-    private boolean isMouseOverArrow(double mouseX, double mouseY, int arrowX, int arrowY) {
-        // 增大点击判定区域以便于点击
-        int hitboxSize = 10;
-        return mouseX >= arrowX - hitboxSize && mouseX <= arrowX + hitboxSize &&
-                mouseY >= arrowY - hitboxSize && mouseY <= arrowY + hitboxSize;
-    }
-
-    @Override
-    public Component getTranslatableComponent() {
-        return Component.translatable("gui." + CombatDepot.MODID + "." + name);
-    }
-
-    @Override
     public ICardInventory getInventory() {
         return inventory;
+    }
+
+    public String getOverlayTexture() {
+        return overlayTexture;
     }
 }
 

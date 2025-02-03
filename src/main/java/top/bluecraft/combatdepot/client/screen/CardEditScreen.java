@@ -23,7 +23,7 @@ public class CardEditScreen extends Screen {
     private static final int ITEMS_PER_PAGE = 27; // 每页显示27个物品
 
     public CardEditScreen(CardConfigScreen parentScreen, ICard card) {
-        super(Component.translatable("gui." + CombatDepot.MODID + ".card.edit", card.getTranslatableComponent()));
+        super(Component.translatable("gui." + CombatDepot.MODID + ".card.edit", Component.translatable("gui." + CombatDepot.MODID + "." + card.getName())));
         this.parentScreen = parentScreen;
         this.card = card;
     }

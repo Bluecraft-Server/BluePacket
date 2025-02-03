@@ -2,12 +2,14 @@ package top.bluecraft.combatdepot.common.inventory.menu;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICardInventory;
@@ -37,11 +39,11 @@ public class GunViewMenu extends AbstractContainerMenu {
     public final Player entity;
     public int x, y, z;
     private final List<ICardInventory> inventories;
-    public int selectedCardIndex = 0;
+    private int selectedCardIndex = 0;
+    private final Map<Integer, List<ItemStack>> pageCache = new HashMap<>();
 
     // 物品管理
     public final Inventory inventory;
-    private final PersistentItemHandler itemHandler;
 
     public GunViewMenu(int id, Inventory playerInventory) {
         super(MenuRegistration.GUN_VIEW_MENU.get(), id);
@@ -60,16 +62,56 @@ public class GunViewMenu extends AbstractContainerMenu {
         this.y = pos.getY();
         this.z = pos.getZ();
 
-        // 初始化物品处理器，使用完整大小以匹配槽位索引
-        this.itemHandler = new PersistentItemHandler(1100, GRID_START_INDEX, GRID_END_INDEX, this);
-
-        // 加载保存的数据
-        this.itemHandler.loadData();
 
         // 设置槽位
         setupGridSlots();
         setupPlayerInventorySlots(playerInventory);
+        for (int i = 0; i < Cards.CARD_INVENTORIES.size(); i++) {
+            cardInventories.put(Cards.CARD_INVENTORIES.get(i).getName(), Cards.CARD_INVENTORIES.get(i));
+        }
     }
+
+    public void addItemToCard(int cardIndex, int slot, ItemStack stack) {
+        ICardInventory inventory = inventories.get(cardIndex);
+        if (inventory != null && slot >= 0 && slot < inventory.getSlots()) {
+            inventory.setStackInSlot(slot, stack);
+            broadcastChanges();
+        }
+    }
+
+    public void requestCardSelection(int index) {
+        if (index >= 0 && index < getInventories().size()) {
+            selectedCardIndex = index;
+            // Clear current page when switching cards
+            clearCurrentPage();
+            // Notify clients about card selection
+            broadcastChanges();
+        }
+    }
+
+    public void requestPageLoad(int pageIndex, List<ItemStack> items) {
+        if (!world.isClientSide) {
+            pageCache.put(pageIndex, items);
+            loadCurrentPage(items);
+        }
+    }
+
+    public void clearCurrentPage() {
+        loadCurrentPage(Collections.emptyList());
+    }
+
+    public void loadCurrentPage(List<ItemStack> items) {
+        for (int i = 0; i < SLOT_SIZE; i++) {
+            inventories.get(selectedCardIndex).setStackInSlot(i, items != null && i < items.size() ?
+                    items.get(i).copy() : ItemStack.EMPTY);
+        }
+        broadcastChanges();
+    }
+
+    public int getSelectedCardIndex() {
+        return selectedCardIndex;
+    }
+
 
     public void markSlotTaken(int slotIndex) {
         takenSlots.set(slotIndex);
@@ -79,6 +121,28 @@ public class GunViewMenu extends AbstractContainerMenu {
     public boolean isSlotTaken(int slotIndex) {
         return takenSlots.get(slotIndex);
     }
+
+
+
+    private void saveMenuState(Player player) {
+        CompoundTag tag = player.getUseItem().getOrCreateTag();
+        tag.put("MenuState", saveState());
+        inventories.get(selectedCardIndex).serializeNBT();
+
+        // Save page cache
+        CompoundTag cacheTag = new CompoundTag();
+        pageCache.forEach((pageIndex, items) -> {
+            ListTag itemList = new ListTag();
+            items.forEach(stack -> {
+                CompoundTag itemTag = new CompoundTag();
+                stack.save(itemTag);
+                itemList.add(itemTag);
+            });
+            cacheTag.put(String.valueOf(pageIndex), itemList);
+        });
+        tag.put("PageCache", cacheTag);
+    }
+
 
     public CompoundTag saveState() {
         CompoundTag tag = new CompoundTag();
@@ -154,7 +218,7 @@ public class GunViewMenu extends AbstractContainerMenu {
                 int xPos = GRID_START_X + col * SLOT_SPACING;
                 int yPos = GRID_START_Y + row * SLOT_SPACING;
 
-                this.addSlot(new GunViewSlot(itemHandler, slotCount, xPos, yPos, this));
+                this.addSlot(new GunViewSlot(inventories.get(selectedCardIndex).getInventory(), slotCount, xPos, yPos, this));
                 slotCount++;
             }
         }
@@ -180,27 +244,16 @@ public class GunViewMenu extends AbstractContainerMenu {
         }
     }
 
-    public void loadCurrentPage(List<ItemStack> items) {
-        for (int i = 0; i < SLOT_SIZE; i++) {
-            itemHandler.setStackInSlot(i, items != null && i < items.size() ?
-                    items.get(i).copy() : ItemStack.EMPTY);
-        }
-        broadcastChanges();
-    }
-
     @Override
     public boolean stillValid(@NotNull Player player) {
         return true;
     }
 
     @Override
-    public void removed(@NotNull Player playerIn) {
-        super.removed(playerIn);
-        // 保存状态到物品
-        if (!playerIn.level().isClientSide) {
-            CompoundTag tag = playerIn.getUseItem().getOrCreateTag();
-            tag.put("MenuState", saveState());
-            itemHandler.saveData();
+    public void removed(@NotNull Player player) {
+        super.removed(player);
+        if (!player.level().isClientSide) {
+            saveMenuState(player);
         }
     }
 
@@ -242,8 +295,8 @@ public class GunViewMenu extends AbstractContainerMenu {
         }
     }
 
-    public PersistentItemHandler getItemHandler() {
-        return itemHandler;
+    public ItemStackHandler getItemHandler() {
+        return inventories.get(selectedCardIndex).getInventory();
     }
 
     public BitSet getTakenSlots() {

@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.api.ICardInventory;
 import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
-public class CardInventoryCapability implements ICardInventory, IItemHandlerModifiable {
+public class CardInventoryCapability implements ICardInventory{
     private final ItemStackHandler inventory;
     private final LazyOptional<ICardInventory> holder;
     private final String name;
@@ -42,26 +42,6 @@ public class CardInventoryCapability implements ICardInventory, IItemHandlerModi
         return inventory.getSlots();
     }
 
-    @Override
-    public int getSlotLimit(int slot) {
-        return inventory.getSlotLimit(slot);
-    }
-
-    @Override
-    public boolean isItemValid(int slot, @NotNull ItemStack stack) {
-        return inventory.isItemValid(slot, stack);
-    }
-
-    @Override
-    public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
-        return inventory.insertItem(slot, stack, simulate);
-    }
-
-    @Override
-    public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
-        return inventory.extractItem(slot, amount, simulate);
-    }
-
     public CompoundTag serializeNBT() {
         return inventory.serializeNBT();
     }
@@ -85,5 +65,9 @@ public class CardInventoryCapability implements ICardInventory, IItemHandlerModi
 
     public LazyOptional<ICardInventory> getHolder() {
         return holder;
+    }
+
+    public ItemStackHandler getInventory() {
+        return inventory;
     }
 }

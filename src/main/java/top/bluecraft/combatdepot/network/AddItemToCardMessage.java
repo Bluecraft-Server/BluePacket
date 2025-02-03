@@ -40,29 +40,9 @@ public class AddItemToCardMessage {
         NetworkEvent.Context context = contextSupplier.get();
         context.enqueueWork(() -> {
             ServerPlayer player = context.getSender();
-            if (player == null) return;
-
-            // 检查权限
-            if (!player.hasPermissions(2)) {
-                player.sendSystemMessage(Component.translatable("message.combat_depot.no_permission"));
-                return;
-            }
-
-            // 获取玩家当前打开的容器
-            if (player.containerMenu instanceof GunViewMenu menu) {
-                // 获取目标物品栏
-                List<ICardInventory> inventories = menu.getInventories();
-                if (message.cardIndex >= 0 && message.cardIndex < inventories.size()) {
-                    ICardInventory inventory = inventories.get(message.cardIndex);
-
-                    // 验证槽位
-                    if (message.slot >= 0 && message.slot < inventory.getSlots()) {
-                        // 更新物品栏
-                        inventory.setStackInSlot(message.slot, message.stack);
-                        // 广播更改
-                        menu.broadcastChanges();
-                    }
-                }
+            if (player != null && player.hasPermissions(2) &&
+                    player.containerMenu instanceof GunViewMenu menu) {
+                menu.addItemToCard(message.cardIndex, message.slot, message.stack);
             }
         });
         context.setPacketHandled(true);

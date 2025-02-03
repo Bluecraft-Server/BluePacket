@@ -110,7 +110,7 @@ public class CardItemConfigScreen extends Screen {
                                     this.minecraft.level != null && this.minecraft.level.isClientSide() &&
                                     this.minecraft.player.getServer() != null && minecraft.player.containerMenu instanceof GunViewMenu menu) {
                                 CombatDepot.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
-                                        menu.selectedCardIndex,
+                                        menu.getSelectedCardIndex(),
                                         slotIndex,
                                         ItemStack.EMPTY  // 发送空物品栈
                                 ));
@@ -256,7 +256,9 @@ public class CardItemConfigScreen extends Screen {
                 if (inputSlot >= 0 && inputSlot < inventory.getSlots()) {
                     targetSlot = inputSlot;
                 } else {
-                    minecraft.player.sendSystemMessage(Component.literal("无效的槽位索引，将使用自动递增槽位"));
+                    if (minecraft.player != null) {
+                        minecraft.player.sendSystemMessage(Component.literal("无效的槽位索引，将使用自动递增槽位"));
+                    }
                 }
             }
         } catch (NumberFormatException ignored) {
@@ -282,7 +284,7 @@ public class CardItemConfigScreen extends Screen {
                     this.minecraft.level != null && this.minecraft.level.isClientSide() &&
                     this.minecraft.player.getServer() != null && minecraft.player.containerMenu instanceof GunViewMenu menu) {
                 CombatDepot.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
-                        menu.selectedCardIndex,
+                        menu.getSelectedCardIndex(),
                         targetSlot,
                         item.getItem().getDefaultInstance()
                 ));
@@ -310,7 +312,7 @@ public class CardItemConfigScreen extends Screen {
     private void updateInventorySerialize() {
         if (this.minecraft != null && this.minecraft.player != null &&
                 this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
-            menu.getItemHandler().saveData();
+            menu.getItemHandler().serializeNBT();
         }
     }
 }

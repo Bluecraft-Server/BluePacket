@@ -13,8 +13,6 @@ public interface ICard {
      */
     String getName();
 
-    Component getTranslatableComponent();
-
     /**
      * 获取当前页码
      */
@@ -35,19 +33,9 @@ public interface ICard {
      */
     void switchToPage(int pageIndex);
 
-    /**
-     * 渲染卡片
-     */
-    void render(GuiGraphics graphics, Minecraft minecraft, int x, int y, int width, int height, boolean isSelected);
-
-    /**
-     * 渲染页面信息
-     */
-    void renderPageInfo(GuiGraphics graphics, Font font, int centerX, int y);
-
-
-    void addPageButtons(Screen screen, int centerX, int y);
 
     ICardInventory getInventory();
+
+    String getOverlayTexture();
 }
 

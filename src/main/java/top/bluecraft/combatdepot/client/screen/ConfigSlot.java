@@ -15,7 +15,7 @@ public class ConfigSlot extends SlotItemHandler {
         super(menu.getInventories().stream()
                 .filter(inventory -> inventory.getSlots() == index)
                 .findFirst()
-                .orElse(null), index, x, y);
+                .orElse(null).getInventory(), index, x, y);
         this.x = x;
         this.y = y;
         this.font = font;

@@ -39,7 +39,7 @@ public class AutoCardConfig {
                 newCard.setEnabled(true);
                 newCard.setName(cardName);
                 newCard.setInventorySize(770); // 默认大小
-                newCard.setTexture(texture.toString());
+                newCard.setTexture(texture.getNamespace() + ":" + texture.getPath());
 
                 // 添加到配置中
                 config.getCards().add(newCard);

@@ -81,6 +81,8 @@ public class CombatDepot {
                 () -> {
                     CardTextureLoader.initializeTextureDirectory();
                     AutoCardConfig.updateConfigWithNewTextures();
+                    CombatDepot.addNetworkMessage(SyncCardsPacket.class, SyncCardsPacket::encode, SyncCardsPacket::decode, SyncCardsPacket::handle);
+                    CombatDepot.addNetworkMessage(PageChangePacket.class, PageChangePacket::encode, PageChangePacket::decode, PageChangePacket::handle);
                     CombatDepot.addNetworkMessage(SlotTakeMessage.class, SlotTakeMessage::encode, SlotTakeMessage::decode, SlotTakeMessage::handle);
                     CombatDepot.addNetworkMessage(CardSelectionMessage.class, CardSelectionMessage::encode, CardSelectionMessage::decode, CardSelectionMessage::handle);
                     CombatDepot.addNetworkMessage(AddItemToCardMessage.class, AddItemToCardMessage::encode, AddItemToCardMessage::decode, AddItemToCardMessage::handle);

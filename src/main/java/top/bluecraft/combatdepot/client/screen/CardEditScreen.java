@@ -11,18 +11,19 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
+import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
 import java.util.List;
 
 @OnlyIn(Dist.CLIENT)
 public class CardEditScreen extends Screen {
     private final CardConfigScreen parentScreen;
-    private final ICard card;
+    private final GunViewMenu.Card card;
     private EditBox itemInput;
     private int currentPage = 0;
     private static final int ITEMS_PER_PAGE = 27; // 每页显示27个物品
 
-    public CardEditScreen(CardConfigScreen parentScreen, ICard card) {
+        public CardEditScreen(CardConfigScreen parentScreen, GunViewMenu.Card card) {
         super(Component.translatable("gui." + CombatDepot.MODID + ".card.edit", Component.translatable("gui." + CombatDepot.MODID + "." + card.getName())));
         this.parentScreen = parentScreen;
         this.card = card;
@@ -73,34 +74,36 @@ public class CardEditScreen extends Screen {
     }
 
     private void renderCardPage(GuiGraphics graphics) {
-        List<ItemStack> allItems = card.getPage(card.getCurrentPageIndex()).items();
+        if (parentScreen.getMinecraft().player != null && parentScreen.getMinecraft().player.containerMenu instanceof GunViewMenu menu) {
+            List<ItemStack> allItems = card.getPageItems(menu.getCurrentPage());
 
-        // 计算总页数
-        int totalPages = (int) Math.ceil((double) allItems.size() / ITEMS_PER_PAGE);
+            // 计算总页数
+            int totalPages = (int) Math.ceil((double) allItems.size() / ITEMS_PER_PAGE);
 
-        // 计算当前页的起始和结束索引
-        int startIndex = currentPage * ITEMS_PER_PAGE;
-        int endIndex = Math.min(startIndex + ITEMS_PER_PAGE, allItems.size());
+            // 计算当前页的起始和结束索引
+            int startIndex = currentPage * ITEMS_PER_PAGE;
+            int endIndex = Math.min(startIndex + ITEMS_PER_PAGE, allItems.size());
 
-        // 获取当前页要显示的物品
-        List<ItemStack> pageItems = allItems.subList(startIndex, endIndex);
+            // 获取当前页要显示的物品
+            List<ItemStack> pageItems = allItems.subList(startIndex, endIndex);
 
-        int startX = width / 2 - 90;
-        int startY = 50;
-        int itemSize = 16;
-        int spacing = 20;
+            int startX = width / 2 - 90;
+            int startY = 50;
+            int itemSize = 16;
+            int spacing = 20;
 
-        // 渲染当前页的物品（3行9列）
-        for (int i = 0; i < pageItems.size(); i++) {
-            int row = i / 9;
-            int col = i % 9;
-            int x = startX + col * spacing;
-            int y = startY + row * spacing;
+            // 渲染当前页的物品（3行9列）
+            for (int i = 0; i < pageItems.size(); i++) {
+                int row = i / 9;
+                int col = i % 9;
+                int x = startX + col * spacing;
+                int y = startY + row * spacing;
 
-            ItemStack stack = pageItems.get(i);
-            if (!stack.isEmpty()) {
-                graphics.renderItem(stack, x, y);
-                graphics.renderItemDecorations(font, stack, x, y);
+                ItemStack stack = pageItems.get(i);
+                if (!stack.isEmpty()) {
+                    graphics.renderItem(stack, x, y);
+                    graphics.renderItemDecorations(font, stack, x, y);
+                }
             }
         }
     }

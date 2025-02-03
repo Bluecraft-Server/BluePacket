@@ -11,9 +11,7 @@ import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import top.bluecraft.combatdepot.CombatDepot;
-import top.bluecraft.combatdepot.api.ICardInventory;
-import top.bluecraft.combatdepot.common.capability.CardInventoryCapability;
-import top.bluecraft.combatdepot.common.card.Cards;
+import top.bluecraft.combatdepot.common.capability.GeneralTerminalInventoryCapability;
 
 public class GeneralTerminal extends Item {
     private static final String NBT_INVENTORIES_TAG = "CardInventories";
@@ -24,26 +22,7 @@ public class GeneralTerminal extends Item {
 
     @Override
     public @Nullable ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundTag nbt) {
-        // Check for existing inventories in NBT first
-        if (nbt != null && nbt.contains(NBT_INVENTORIES_TAG)) {
-            CompoundTag inventoriesTag = nbt.getCompound(NBT_INVENTORIES_TAG);
-
-            // Try to restore from saved data
-            for (ICardInventory cardInventory : Cards.CARD_INVENTORIES) {
-                if (inventoriesTag.contains(cardInventory.getName())) {
-                    cardInventory.deserializeNBT(inventoriesTag.getCompound(cardInventory.getName()));
-                    return new TerminalCapabilityProvider(cardInventory);
-                }
-            }
-        }
-
-        // If no saved data, use first available inventory
-        for (ICardInventory cardInventory : Cards.CARD_INVENTORIES) {
-            return new TerminalCapabilityProvider(cardInventory);
-        }
-
-        // Fallback to default
-        return new TerminalCapabilityProvider(new CardInventoryCapability(7700, "normal"));
+        return new GeneralTerminalInventoryCapability();
     }
 
     @Override

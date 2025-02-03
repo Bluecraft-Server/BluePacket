@@ -5,6 +5,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraftforge.items.ItemStackHandler;
 import top.bluecraft.combatdepot.common.page.Page;
 
 public interface ICard {
@@ -34,7 +35,7 @@ public interface ICard {
     void switchToPage(int pageIndex);
 
 
-    ICardInventory getInventory();
+    ItemStackHandler getInventory();
 
     String getOverlayTexture();
 }

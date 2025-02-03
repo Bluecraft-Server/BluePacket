@@ -3,36 +3,35 @@ package top.bluecraft.combatdepot.network;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
-import top.bluecraft.combatdepot.api.ICardInventory;
+import net.minecraftforge.network.PacketDistributor;
+import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
-import java.util.List;
 import java.util.function.Supplier;
 
-public record CardSelectionMessage(int selectedIndex) {
-    public void encode(FriendlyByteBuf buffer) {
-        buffer.writeVarInt(selectedIndex);
+public record CardSelectionMessage(int cardId) {
+    public static void encode(CardSelectionMessage msg, FriendlyByteBuf buf) {
+        buf.writeVarInt(msg.cardId);
     }
 
-    public static CardSelectionMessage decode(FriendlyByteBuf buffer) {
-        return new CardSelectionMessage(buffer.readVarInt());
+    public static CardSelectionMessage decode(FriendlyByteBuf buf) {
+        return new CardSelectionMessage(buf.readVarInt());
     }
 
-    public static void handle(CardSelectionMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> {
-            ServerPlayer player = context.getSender();
+    public static void handle(CardSelectionMessage msg, Supplier<NetworkEvent.Context> ctx) {
+        ctx.get().enqueueWork(() -> {
+            ServerPlayer player = ctx.get().getSender();
             if (player != null && player.containerMenu instanceof GunViewMenu menu) {
-                // 验证索引
-                List<ICardInventory> inventories = menu.getInventories();
-                if (message.selectedIndex >= 0 && message.selectedIndex < inventories.size()) {
-                    // 更新选择
-                    menu.selectCard(message.selectedIndex);
-                    // 广播更改
-                    menu.broadcastChanges();
-                }
+                // 在服务端更新选择
+                menu.selectCard(msg.cardId);
+
+                // 同步回客户端
+                CombatDepot.PACKET_HANDLER.send(
+                        PacketDistributor.PLAYER.with(() -> player),
+                        new ClientboundCardSelectionPacket(msg.cardId())
+                );
             }
         });
-        context.setPacketHandled(true);
+        ctx.get().setPacketHandled(true);
     }
 }

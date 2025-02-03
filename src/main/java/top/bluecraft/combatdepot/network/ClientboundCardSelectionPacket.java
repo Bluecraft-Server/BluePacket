@@ -5,19 +5,14 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.NetworkEvent;
-import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.client.screen.GunViewScreen;
+import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
 import java.util.List;
 import java.util.function.Supplier;
 
 @OnlyIn(Dist.CLIENT)
-public class ClientboundCardSelectionPacket {
-    private final int selectedIndex;
-
-    public ClientboundCardSelectionPacket(int selectedIndex) {
-        this.selectedIndex = selectedIndex;
-    }
+public record ClientboundCardSelectionPacket(int selectedIndex) {
 
     public static void encode(ClientboundCardSelectionPacket packet, FriendlyByteBuf buffer) {
         buffer.writeVarInt(packet.selectedIndex);
@@ -33,7 +28,7 @@ public class ClientboundCardSelectionPacket {
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.screen instanceof GunViewScreen screen) {
                 // 验证卡片索引
-                List<ICard> cards = screen.getCards();
+                List<GunViewMenu.Card> cards = screen.getMenu().getCards();
                 if (packet.selectedIndex >= 0 && packet.selectedIndex < cards.size()) {
                     // 更新客户端UI
                     screen.updateCardSelection(packet.selectedIndex);
@@ -41,9 +36,5 @@ public class ClientboundCardSelectionPacket {
             }
         });
         context.setPacketHandled(true);
-    }
-
-    public int getSelectedIndex() {
-        return selectedIndex;
     }
 }

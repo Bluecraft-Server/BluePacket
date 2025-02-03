@@ -3,7 +3,9 @@ package top.bluecraft.combatdepot.client.screen;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.SlotItemHandler;
+import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
 public class ConfigSlot extends SlotItemHandler {
@@ -12,20 +14,17 @@ public class ConfigSlot extends SlotItemHandler {
     private final Font font;
 
     public ConfigSlot(int x, int y, int index, Font font, GunViewMenu menu) {
-        super(menu.getInventories().stream()
-                .filter(inventory -> inventory.getSlots() == index)
-                .findFirst()
-                .orElse(null).getInventory(), index, x, y);
+        super(new ItemStackHandler(1), index, x, y);
         this.x = x;
         this.y = y;
         this.font = font;
     }
 
-    public void set(ItemStack stack) {
+    public void set(@NotNull ItemStack stack) {
         this.stack = stack;
     }
 
-    public ItemStack getItem() {
+    public @NotNull ItemStack getItem() {
         return stack;
     }
 

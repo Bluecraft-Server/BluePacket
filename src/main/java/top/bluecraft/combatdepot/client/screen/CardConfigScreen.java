@@ -10,6 +10,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
+import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +39,7 @@ public class CardConfigScreen extends Screen {
     protected void init() {
         super.init();
 
-        List<ICard> cards = parentScreen.getCards();
+        List<GunViewMenu.Card> cards = parentScreen.getMenu().getCards();
         int totalRows = (int) Math.ceil((double) cards.size() / BUTTONS_PER_ROW);
         maxScroll = Math.max(0, totalRows - VISIBLE_ROWS);
 
@@ -85,7 +86,7 @@ public class CardConfigScreen extends Screen {
     private void updateButtons() {
         clearButtons();
 
-        List<ICard> cards = parentScreen.getCards();
+        List<GunViewMenu.Card> cards = parentScreen.getMenu().getCards();
         int startX = (width - (BUTTON_WIDTH * BUTTONS_PER_ROW + BUTTON_SPACING)) / 2;
 
         // 只添加可见范围内的按钮
@@ -93,7 +94,7 @@ public class CardConfigScreen extends Screen {
              i < Math.min(cards.size(), (currentScroll + VISIBLE_ROWS) * BUTTONS_PER_ROW);
              i++) {
 
-            ICard card = cards.get(i);
+            GunViewMenu.Card card = cards.get(i);
             int localRow = (i / BUTTONS_PER_ROW) - currentScroll;
             int col = i % BUTTONS_PER_ROW;
 
@@ -178,5 +179,9 @@ public class CardConfigScreen extends Screen {
         return minecraft != null &&
                 minecraft.player != null &&
                 minecraft.player.hasPermissions(2);
+    }
+
+    public GunViewScreen getParentScreen() {
+        return parentScreen;
     }
 }

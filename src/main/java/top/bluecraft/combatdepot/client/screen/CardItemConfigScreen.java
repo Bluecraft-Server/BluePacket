@@ -12,6 +12,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
@@ -26,7 +27,7 @@ import java.util.List;
 @OnlyIn(Dist.CLIENT)
 public class CardItemConfigScreen extends Screen {
     private final CardEditScreen parentScreen;
-    private final ICard card;
+    private final GunViewMenu.Card card;
     private EditBox itemInput;
     private EditBox countInput;
     private EditBox deleteSlotInput;  // 新增：用于输入要删除的槽位索引
@@ -39,7 +40,7 @@ public class CardItemConfigScreen extends Screen {
     private static final int SLOT_SIZE = 18;
     private static final int SLOT_SPACING = 2;
 
-    public CardItemConfigScreen(CardEditScreen parentScreen, ICard card) {
+    public CardItemConfigScreen(CardEditScreen parentScreen, GunViewMenu.Card card) {
         super(Component.translatable("gui." + CombatDepot.MODID + ".card.item.config"));
         this.parentScreen = parentScreen;
         this.card = card;
@@ -99,7 +100,7 @@ public class CardItemConfigScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("D"), button -> {
                     try {
                         int slotIndex = Integer.parseInt(deleteSlotInput.getValue());
-                        ICardInventory inventory = card.getInventory();
+                        ItemStackHandler inventory = card.getInventory();
 
                         if (slotIndex >= 0 && slotIndex < inventory.getSlots()) {
                             // 将指定槽位的物品设为空
@@ -110,7 +111,7 @@ public class CardItemConfigScreen extends Screen {
                                     this.minecraft.level != null && this.minecraft.level.isClientSide() &&
                                     this.minecraft.player.getServer() != null && minecraft.player.containerMenu instanceof GunViewMenu menu) {
                                 CombatDepot.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
-                                        menu.getSelectedCardIndex(),
+                                        menu.getCards().get(menu.getSelectedCardIndex()).getName(),
                                         slotIndex,
                                         ItemStack.EMPTY  // 发送空物品栈
                                 ));
@@ -245,7 +246,7 @@ public class CardItemConfigScreen extends Screen {
     }
 
     private void addItemToCard(ItemStack item) {
-        ICardInventory inventory = card.getInventory();
+        ItemStackHandler inventory = card.getInventory();
         int targetSlot = -1;
 
         // 检查是否有手动输入的槽位索引
@@ -284,14 +285,16 @@ public class CardItemConfigScreen extends Screen {
                     this.minecraft.level != null && this.minecraft.level.isClientSide() &&
                     this.minecraft.player.getServer() != null && minecraft.player.containerMenu instanceof GunViewMenu menu) {
                 CombatDepot.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
-                        menu.getSelectedCardIndex(),
+                        menu.getCards().get(menu.getSelectedCardIndex()).getName(),
                         targetSlot,
                         item.getItem().getDefaultInstance()
                 ));
             }
         } else {
             if (minecraft != null) {
-                minecraft.player.sendSystemMessage(Component.literal("没有可用的槽位"));
+                if (minecraft.player != null) {
+                    minecraft.player.sendSystemMessage(Component.literal("没有可用的槽位"));
+                }
             }
         }
     }
@@ -312,7 +315,7 @@ public class CardItemConfigScreen extends Screen {
     private void updateInventorySerialize() {
         if (this.minecraft != null && this.minecraft.player != null &&
                 this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
-            menu.getItemHandler().serializeNBT();
+            menu.getDisplayHandler().serializeNBT();
         }
     }
 }

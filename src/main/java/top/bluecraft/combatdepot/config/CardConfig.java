@@ -4,9 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.loading.FMLPaths;
+import net.minecraftforge.items.ItemStackHandler;
 import top.bluecraft.combatdepot.CombatDepot;
-import top.bluecraft.combatdepot.api.ICardInventory;
-import top.bluecraft.combatdepot.common.capability.CardInventoryCapability;
+import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -30,24 +30,19 @@ public class CardConfig {
         private String texture;
         private Map<String, String> translations;
 
-        public boolean isEnabled() { return enabled; }
-        public String getName() { return name; }
-        public int getInventorySize() { return inventorySize; }
+
+
         public ResourceLocation getTexture() {
             if (texture.startsWith("file:///")) {
-                // 如果是文件路径，创建基于文件的 ResourceLocation
-                return new ResourceLocation("combatdepot",
-                        "textures/gui/cards/" + new File(texture.substring(8)).getName());
+                return new ResourceLocation("combatdepot", "textures/gui/cards/" + new File(texture.substring(8)).getName());
             }
             return new ResourceLocation(texture);
         }
 
-        // 添加 setter 方法
-        public void setEnabled(boolean enabled) { this.enabled = enabled; }
-        public void setName(String name) { this.name = name; }
-        public void setInventorySize(int inventorySize) { this.inventorySize = inventorySize; }
-        public void setTexture(String texture) { this.texture = texture; }
-
+        // Getters
+        public boolean isEnabled() { return enabled; }
+        public String getName() { return name; }
+        public int getInventorySize() { return inventorySize; }
         public Map<String, String> getTranslations() {
             if (translations == null) {
                 translations = new HashMap<>();
@@ -55,30 +50,28 @@ public class CardConfig {
             return translations;
         }
 
-        public void setTranslations(Map<String, String> translations) {
-            this.translations = translations;
-        }
-
+        // Setters
+        public void setEnabled(boolean enabled) { this.enabled = enabled; }
+        public void setName(String name) { this.name = name; }
+        public void setInventorySize(int inventorySize) { this.inventorySize = inventorySize; }
+        public void setTexture(String texture) { this.texture = texture; }
+        public void setTranslations(Map<String, String> translations) { this.translations = translations; }
         public void addTranslation(String lang, String text) {
-            if (translations == null) {
-                translations = new HashMap<>();
-            }
-            translations.put(lang, text);
+            getTranslations().put(lang, text);
         }
     }
 
+    // 加载配置
     public static CardConfig load() {
         Path configDir = FMLPaths.CONFIGDIR.get().resolve(CombatDepot.MODID);
         Path configFile = configDir.resolve(CONFIG_FILE);
 
-        // 如果配置文件不存在，创建默认配置
         if (!Files.exists(configFile)) {
             CardConfig defaultConfig = createDefaultConfig();
             save(defaultConfig);
             return defaultConfig;
         }
 
-        // 读取配置文件
         try (Reader reader = Files.newBufferedReader(configFile)) {
             return GSON.fromJson(reader, CardConfig.class);
         } catch (Exception e) {
@@ -87,6 +80,7 @@ public class CardConfig {
         }
     }
 
+    // 保存配置
     public static void save(CardConfig config) {
         Path configDir = FMLPaths.CONFIGDIR.get().resolve(CombatDepot.MODID);
         Path configFile = configDir.resolve(CONFIG_FILE);
@@ -106,20 +100,21 @@ public class CardConfig {
         config.disableDefaultCards = false;
         config.cards = new ArrayList<>();
 
-        // 添加默认卡片配置
-        config.cards.add(createCardEntry(true, "main_weapon", 1100, "combatdepot:textures/gui/main_weapon.png"));
-        config.cards.add(createCardEntry(true, "secondary_weapon", 770, "combatdepot:textures/gui/secondary_weapon.png"));
-        config.cards.add(createCardEntry(true, "scope", 770, "combatdepot:textures/gui/scope.png"));
-        config.cards.add(createCardEntry(true, "magazine", 770, "combatdepot:textures/gui/magazine.png"));
-        config.cards.add(createCardEntry(true, "gun_module", 770, "combatdepot:textures/gui/gun_module.png"));
-        config.cards.add(createCardEntry(true, "grip", 770, "combatdepot:textures/gui/grip.png"));
-        config.cards.add(createCardEntry(true, "stock", 770, "combatdepot:textures/gui/stock.png"));
-        config.cards.add(createCardEntry(true, "barrel", 770, "combatdepot:textures/gui/barrel.png"));
-        config.cards.add(createCardEntry(true, "bullet", 770, "combatdepot:textures/gui/bullet.png"));
+        // 默认卡片
+        config.cards.add(createCardEntry(true, "main_weapon", 1100, "combatdepot:textures/gui/cards/main_weapon.png"));
+        config.cards.add(createCardEntry(true, "secondary_weapon", 770, "combatdepot:textures/gui/cards/secondary_weapon.png"));
+        config.cards.add(createCardEntry(true, "scope", 770, "combatdepot:textures/gui/cards/scope.png"));
+        config.cards.add(createCardEntry(true, "magazine", 770, "combatdepot:textures/gui/cards/magazine.png"));
+        config.cards.add(createCardEntry(true, "gun_module", 770, "combatdepot:textures/gui/cards/gun_module.png"));
+        config.cards.add(createCardEntry(true, "grip", 770, "combatdepot:textures/gui/cards/grip.png"));
+        config.cards.add(createCardEntry(true, "stock", 770, "combatdepot:textures/gui/cards/stock.png"));
+        config.cards.add(createCardEntry(true, "barrel", 770, "combatdepot:textures/gui/cards/barrel.png"));
+        config.cards.add(createCardEntry(true, "bullet", 770, "combatdepot:textures/gui/cards/bullet.png"));
 
         return config;
     }
 
+    // 创建卡片配置项
     public static CardEntry createCardEntry(boolean enabled, String name, int size, String texture) {
         CardEntry entry = new CardEntry();
         entry.enabled = enabled;
@@ -129,34 +124,28 @@ public class CardConfig {
         return entry;
     }
 
-    public List<ICardInventory> createInventories() {
-        List<ICardInventory> inventories = new ArrayList<>();
+    // 初始化卡片库存
+    public List<GunViewMenu.Card> createCards() {
+        List<GunViewMenu.Card> cardList = new ArrayList<>();
 
-        // 如果没有禁用默认卡片且卡片列表为空，创建默认配置
-        if (!disableDefaultCards && (cards == null || cards.isEmpty())) {
-            cards = createDefaultConfig().getCards();
-        }
+        // 确保始终使用最新配置
+        List<CardEntry> effectiveCards = this.cards == null || this.cards.isEmpty()
+                ? createDefaultConfig().getCards()
+                : this.cards;
 
-        // 创建启用的卡片的物品栏
-        if (cards != null) {
-            for (CardEntry card : cards) {
-                if (card.enabled) {
-                    inventories.add(new CardInventoryCapability(card.inventorySize, card.name));
-                }
+        for (CardEntry entry : effectiveCards) {
+            if (entry.isEnabled()) {
+                // 使用配置中的 inventorySize
+                ItemStackHandler inventory = new ItemStackHandler(entry.getInventorySize());
+                cardList.add(new GunViewMenu.Card(entry, inventory));
             }
         }
-
-        return inventories;
+        return cardList;
     }
 
-    // Getter 和 Setter 方法
-    public boolean isDisableDefaultCards() {
-        return disableDefaultCards;
-    }
-
-    public void setDisableDefaultCards(boolean disableDefaultCards) {
-        this.disableDefaultCards = disableDefaultCards;
-    }
+    // Getters and Setters
+    public boolean isDisableDefaultCards() { return disableDefaultCards; }
+    public void setDisableDefaultCards(boolean disableDefaultCards) { this.disableDefaultCards = disableDefaultCards; }
 
     public List<CardEntry> getCards() {
         if (cards == null) {
@@ -165,9 +154,7 @@ public class CardConfig {
         return cards;
     }
 
-    public void setCards(List<CardEntry> cards) {
-        this.cards = cards;
-    }
+    public void setCards(List<CardEntry> cards) { this.cards = cards; }
 
     // 检查卡片是否存在
     public boolean hasCard(String name) {

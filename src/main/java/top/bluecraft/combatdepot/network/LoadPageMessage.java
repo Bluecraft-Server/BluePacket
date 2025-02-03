@@ -26,7 +26,7 @@ public record LoadPageMessage(int pageIndex, List<ItemStack> items) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
             if (player != null && player.containerMenu instanceof GunViewMenu menu) {
-                menu.loadCurrentPage(message.items());
+                menu.loadPage(message.pageIndex(), message.items());
             }
         });
         ctx.get().setPacketHandled(true);

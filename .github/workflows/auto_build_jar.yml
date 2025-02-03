@@ -1,0 +1,112 @@
+name: Build and Publish
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Zulu 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Get current date
+        id: get_date
+        run: echo "DATE=$(TZ=Asia/Shanghai date +'%y%m%d')" >> $GITHUB_ENV
+
+      - name: Get Git SHA
+        id: get_sha
+        run: echo "SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+      - name: Set VERSION environment variable
+        run: |
+          ORIGINAL_VERSION=$(grep "version:" src/main/resources/plugin.yml | cut -d ' ' -f2 | sed 's/[^0-9.]//g')
+          echo "Setting VERSION to ${ORIGINAL_VERSION}-${{ env.DATE }}-${{ env.SHA }}"
+          echo "VERSION=${ORIGINAL_VERSION}-${{ env.DATE }}-${{ env.SHA }}" >> $GITHUB_ENV
+
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          git fetch --tags
+          if git show-ref --tags --quiet refs/tags/${{ env.VERSION }}; then
+            echo "Tag exists"
+            echo "SKIP_BUILD=true" >> $GITHUB_ENV
+          else
+            echo "Tag does not exist"
+            echo "SKIP_BUILD=false" >> $GITHUB_ENV
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if commit message contains [skip] and if branch is master
+        id: check_skip_and_branch
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+          BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+          if [ "$COMMIT_MESSAGE" == "[ci]"*]; then
+            echo "SKIP_RELEASE=false" >> $GITHUB_ENV
+          else
+            echo "SKIP_RELEASE=true" >> $GITHUB_ENV
+          fi
+
+      - name: Update version in plugin.yml
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          sed -i "s/\(version: \).*/\1'${{ env.VERSION }}'/" src/main/resources/plugin.yml
+
+      - name: Build with Gradle
+        if: env.SKIP_BUILD == 'false'
+        run: ./gradlew shadowJar
+
+      - name: Rename JAR file
+        if: env.SKIP_BUILD == 'false'
+        id: rename_file
+        run: |
+          TARGET_JAR="BasePlugin-${{ env.VERSION }}"
+          SOURCE_JAR=$(find run/plugins -name "*.jar" -print -quit)
+          echo "FINAL_JAR_NAME=${TARGET_JAR}" >> $GITHUB_ENV
+          mv "${SOURCE_JAR}" "${TARGET_JAR}.jar"
+
+      - name: Upload Artifact
+        uses: "actions/upload-artifact@v4"
+        with:
+          name: ${{ env.FINAL_JAR_NAME }}
+          path: ${{ env.FINAL_JAR_NAME }}.jar
+
+      - name: Create Pre-Release and Upload JAR file
+        if: env.SKIP_RELEASE == 'false' && env.SKIP_BUILD == 'false'
+        uses: ncipollo/release-action@v1.15.0
+        with:
+          tag: ${{ env.VERSION }}
+          name: "版本 ${{ env.VERSION }} (自动创建的版本)"
+          body: |
+            此预发布版本由Github Action自动构建。
+            请注意，此版本为测试版，并不代表最终版本。
+            ### 最后一次提交信息
+            #### 提交SHA:
+            > ${{ github.sha }}
+            #### 提交作者:
+            > ${{ github.event.head_commit.author.username }} 
+            #### 提交时间:
+            > ${{ github.event.head_commit.timestamp }}
+            #### 提交消息:
+            > ${{ github.event.head_commit.message }}
+          draft: false
+          prerelease: true
+          makeLatest: true
+          generateReleaseNotes: true
+          artifacts: ${{ env.FINAL_JAR_NAME }}.jar
+          token: ${{ secrets.GITHUB_TOKEN }}

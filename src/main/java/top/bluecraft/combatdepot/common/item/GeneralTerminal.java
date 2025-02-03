@@ -34,8 +34,6 @@ public class GeneralTerminal extends Item {
             CombatDepot.LOGGER.info("[CombatDepot] Opened server screen");
         }
 
-
-
         return InteractionResultHolder.success(itemstack);
     }
 }

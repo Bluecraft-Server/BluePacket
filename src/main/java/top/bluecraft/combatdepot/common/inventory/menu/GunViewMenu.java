@@ -1,8 +1,6 @@
 package top.bluecraft.combatdepot.common.inventory.menu;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -67,19 +65,8 @@ public class GunViewMenu extends AbstractContainerMenu {
         if (!world.isClientSide) {
             ServerPlayer serverPlayer = (ServerPlayer) player;
             GlobalCardStorage storage = GlobalCardStorage.get(serverPlayer.serverLevel());
-
-            for (Card card : cards) {
-                // 强制覆盖库存数据
-                ItemStackHandler handler = new ItemStackHandler(card.getInventory().getSlots());
-                storage.updatePlayerInventory(serverPlayer, card.getName(), handler);
-                card.setInventory(handler);
-            }
-
-            // 同步数据到客户端
-            CombatDepot.PACKET_HANDLER.send(
-                    PacketDistributor.PLAYER.with(() -> (ServerPlayer) player),
-                    new SyncCardsPacket(cards, cardOffset)
-            );
+            config.loadFromGlobalStorage(serverPlayer, storage);
+            this.cards = config.createCards();
         }
 
         setupSlots(playerInventory);
@@ -161,16 +148,16 @@ public class GunViewMenu extends AbstractContainerMenu {
         if (selectedCardIndex == -1) return;
 
         Card card = cards.get(selectedCardIndex);
-        List<ItemStack> pageItems = card.getPageItems(currentPage);
+        int startIndex = currentPage * SLOT_SIZE;
 
-        // 清空显示库存
+        // 从Card的inventory加载到displayHandler
         for (int i = 0; i < SLOT_SIZE; i++) {
-            displayHandler.setStackInSlot(i, ItemStack.EMPTY);
-        }
-
-        // 加载当前页数据
-        for (int i = 0; i < Math.min(pageItems.size(), SLOT_SIZE); i++) {
-            displayHandler.setStackInSlot(i, pageItems.get(i).copy());
+            int actualIndex = startIndex + i;
+            if (actualIndex < card.getInventory().getSlots()) {
+                displayHandler.setStackInSlot(i, card.getInventory().getStackInSlot(actualIndex).copy());
+            } else {
+                displayHandler.setStackInSlot(i, ItemStack.EMPTY);
+            }
         }
     }
 
@@ -180,7 +167,6 @@ public class GunViewMenu extends AbstractContainerMenu {
         for (int row = 0; row < GRID_ROWS; row++) {
             for (int col = 0; col < GRID_COLS; col++) {
                 int index = row * GRID_COLS + col;
-                if (index >= SLOT_SIZE) break;
 
                 addSlot(new DynamicSlot(
                         displayHandler,
@@ -340,15 +326,29 @@ public class GunViewMenu extends AbstractContainerMenu {
 
         cards.forEach(card -> {
             ItemStackHandler handler = card.getInventory();
-            storage.updatePlayerInventory(serverPlayer, card.getName(), handler);
+            storage.updateInventory(card.getName(), handler);
         });
-
+        if (!player.level().isClientSide()) {
+            System.out.println("Saving persistent data");
+        }
         storage.setDirty();
+    }
+
+    public void syncDisplayInventory() {
+        List<ItemStack> pageItems = getCurrentCard().getPageItems(currentPage);
+        for (int i = 0; i < SLOT_SIZE; i++) {
+            displayHandler.setStackInSlot(i, i < pageItems.size() ? pageItems.get(i) : ItemStack.EMPTY);
+        }
+        broadcastChanges();
     }
 
     public void setCardOffset(int offset) {
         this.cardOffset = offset;
         broadcastChanges(); // 通知客户端更新
+    }
+
+    public void setCards(List<Card> cards) {
+        this.cards = cards;
     }
 
     // Region: Getters
@@ -390,6 +390,14 @@ public class GunViewMenu extends AbstractContainerMenu {
 
     public BitSet getTakenSlots() {
         return takenSlots;
+    }
+
+    // GunViewMenu 类中添加以下方法
+    public Card getCurrentCard() {
+        if (selectedCardIndex >= 0 && selectedCardIndex < cards.size()) {
+            return cards.get(selectedCardIndex);
+        }
+        return null; // 如果没有选中卡片，返回 null
     }
 
     @Override
@@ -456,42 +464,31 @@ public class GunViewMenu extends AbstractContainerMenu {
         }
     }
 
-    // 动态槽位（处理显示库存）
     private static class DynamicSlot extends SlotItemHandler {
         private final GunViewMenu menu;
+
         public DynamicSlot(ItemStackHandler handler, int index, int x, int y, GunViewMenu menu) {
             super(handler, index, x, y);
             this.menu = menu;
         }
 
         @Override
-        public boolean mayPlace(@NotNull ItemStack stack) {
-            return false;
-        }
+        public void set(@NotNull ItemStack stack) {
+            super.set(stack);
 
-        @Override
-        public void setChanged() {
-            super.setChanged();
-            // 触发数据同步
-            if (container instanceof GunViewMenu menu) {
-                menu.broadcastChanges();
+            Card currentCard = menu.getCurrentCard();
+            if (currentCard != null) {
+                int actualIndex = menu.getCurrentPage() * SLOT_SIZE + getSlotIndex();
+                if (actualIndex < currentCard.getInventory().getSlots()) {
+                    currentCard.getInventory().setStackInSlot(actualIndex, stack.copy());
+                }
             }
-        }
 
-        @Override
-        public void onTake(@NotNull Player player, @NotNull ItemStack stack) {
-            if (!mayPickup(player)) {
-                return;
+            // 服务端保存数据
+            if (!menu.getWorld().isClientSide()) {
+                menu.savePersistentData();
             }
-            super.onTake(player, stack);
-
-            // 标记槽位已被取出
-            menu.markSlotTaken(getSlotIndex());
-
-            // 只在客户端发送消息
-            if (player.level().isClientSide()) {
-                CombatDepot.PACKET_HANDLER.sendToServer(new SlotTakeMessage(getSlotIndex()));
-            }
+            menu.broadcastChanges();
         }
     }
 }

@@ -3,7 +3,6 @@ package top.bluecraft.combatdepot.common.data;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
@@ -12,17 +11,14 @@ import top.bluecraft.combatdepot.config.CardConfig;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public class GlobalCardStorage extends SavedData {
-    // 常量定义
     private static final String STORAGE_NAME = "global_card_storage";
-    private static final int DEFAULT_SLOT_SIZE = 110; // 默认槽位大小
+    private static final int DEFAULT_SLOT_SIZE = 110;
 
-    // 玩家卡片数据存储结构
-    private final Map<UUID, PlayerCardData> playerDataMap = new HashMap<>();
+    // 全局共享库存
+    private final Map<String, ItemStackHandler> sharedInventories = new HashMap<>();
 
-    // 获取全局实例
     public static GlobalCardStorage get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
                 GlobalCardStorage::load,
@@ -31,87 +27,66 @@ public class GlobalCardStorage extends SavedData {
         );
     }
 
-    // 加载数据
     private static GlobalCardStorage load(CompoundTag tag) {
         GlobalCardStorage storage = new GlobalCardStorage();
-        if (tag.contains("PlayerData", Tag.TAG_COMPOUND)) {
-            CompoundTag playerDataTag = tag.getCompound("PlayerData");
+        if (tag.contains("SharedInventories", Tag.TAG_COMPOUND)) {
+            CompoundTag inventoriesTag = tag.getCompound("SharedInventories");
 
-            for (String uuidStr : playerDataTag.getAllKeys()) {
-                UUID uuid = UUID.fromString(uuidStr);
-                CompoundTag playerTag = playerDataTag.getCompound(uuidStr);
-                Map<String, ItemStackHandler> cardInventories = new HashMap<>();
+            for (String cardName : inventoriesTag.getAllKeys()) {
+                CompoundTag cardTag = inventoriesTag.getCompound(cardName);
+                ItemStackHandler handler = new ItemStackHandler(DEFAULT_SLOT_SIZE);
+                handler.deserializeNBT(cardTag);
 
-                for (String cardName : playerTag.getAllKeys()) {
-                    CompoundTag cardTag = playerTag.getCompound(cardName);
-                    ItemStackHandler handler = new ItemStackHandler(DEFAULT_SLOT_SIZE);
-                    handler.deserializeNBT(cardTag);
-                    cardInventories.put(cardName, handler);
+                if (handler.getSlots() != DEFAULT_SLOT_SIZE) {
+                    ItemStackHandler newHandler = new ItemStackHandler(DEFAULT_SLOT_SIZE);
+                    for (int i = 0; i < Math.min(handler.getSlots(), DEFAULT_SLOT_SIZE); i++) {
+                        newHandler.setStackInSlot(i, handler.getStackInSlot(i));
+                    }
+                    handler = newHandler;
                 }
 
-                storage.playerDataMap.put(uuid, new PlayerCardData(cardInventories));
+                storage.sharedInventories.put(cardName, handler);
             }
         }
         return storage;
     }
 
-    // 保存数据
     @Override
     public @NotNull CompoundTag save(CompoundTag tag) {
-        CompoundTag playerDataTag = new CompoundTag();
-
-        playerDataMap.forEach((uuid, playerData) -> {
-            CompoundTag playerTag = new CompoundTag();
-            playerData.cardInventories().forEach((cardName, handler) -> {
-                playerTag.put(cardName, handler.serializeNBT());
-            });
-            playerDataTag.put(uuid.toString(), playerTag);
+        CompoundTag inventoriesTag = new CompoundTag();
+        sharedInventories.forEach((cardName, handler) -> {
+            inventoriesTag.put(cardName, handler.serializeNBT());
         });
-
-        tag.put("PlayerData", playerDataTag);
+        tag.put("SharedInventories", inventoriesTag);
         return tag;
     }
 
-    // 获取或创建玩家卡片数据
-    public PlayerCardData getOrCreatePlayerData(ServerPlayer player, List<CardConfig.CardEntry> cardEntries) {
-        return playerDataMap.compute(player.getUUID(), (uuid, playerData) -> {
-            if (playerData == null) {
-                playerData = new PlayerCardData(new HashMap<>());
-            }
+    public void initializeCards(List<CardConfig.CardEntry> cardEntries) {
+        // 清理无效卡片库存
+        sharedInventories.keySet().removeIf(cardName ->
+                cardEntries.stream().noneMatch(entry -> entry.getName().equals(cardName) && entry.isEnabled())
+        );
 
-            // 初始化缺失的卡片库存
-            @org.jetbrains.annotations.Nullable PlayerCardData finalPlayerData = playerData;
-            cardEntries.stream()
-                    .filter(CardConfig.CardEntry::isEnabled)
-                    .forEach(entry -> {
-                        finalPlayerData.cardInventories().computeIfAbsent(entry.getName(),
-                                k -> new ItemStackHandler(entry.getInventorySize())
-                        );
-                    });
-
-            return playerData;
-        });
+        // 初始化缺失的卡片库存
+        cardEntries.stream()
+                .filter(CardConfig.CardEntry::isEnabled)
+                .forEach(entry -> {
+                    sharedInventories.computeIfAbsent(entry.getName(),
+                            k -> new ItemStackHandler(entry.getInventorySize())
+                    );
+                });
+        setDirty();
     }
 
-    // 更新玩家卡片库存
-    public void updatePlayerInventory(ServerPlayer player, String cardName, ItemStackHandler handler) {
-        PlayerCardData playerData = playerDataMap.get(player.getUUID());
-        if (playerData != null) {
-            playerData.cardInventories().put(cardName, handler);
-            setDirty(); // 标记数据需要保存
-        }
+    public ItemStackHandler getInventory(String cardName) {
+        return sharedInventories.get(cardName);
     }
 
-    // 玩家卡片数据记录类
-    public record PlayerCardData(Map<String, ItemStackHandler> cardInventories) {
-        // 获取指定卡片的库存
-        public ItemStackHandler getInventory(String cardName) {
-            return cardInventories.get(cardName);
-        }
-
-        // 检查是否存在指定卡片的库存
-        public boolean hasInventory(String cardName) {
-            return cardInventories.containsKey(cardName);
+    public void updateInventory(String cardName, ItemStackHandler handler) {
+        ItemStackHandler oldHandler = sharedInventories.get(cardName);
+        if (oldHandler == null || !oldHandler.equals(handler)) {
+            sharedInventories.put(cardName, handler);
+            setDirty();
         }
     }
 }

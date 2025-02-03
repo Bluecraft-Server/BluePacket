@@ -247,55 +247,43 @@ public class CardItemConfigScreen extends Screen {
 
     private void addItemToCard(ItemStack item) {
         ItemStackHandler inventory = card.getInventory();
-        int targetSlot = -1;
+        GunViewMenu menu = parentScreen.getParentScreen().getParentScreen().getMenu();
 
-        // 检查是否有手动输入的槽位索引
+        // 获取当前页面的起始槽位
+        int pageStart = menu.getCurrentPage() * SLOT_SIZE;
+        int pageEnd = Math.min(pageStart + SLOT_SIZE, inventory.getSlots());
+
+        // 优先使用手动指定的槽位（需在页面范围内）
         try {
             String slotIndexStr = deleteSlotInput.getValue().trim();
             if (!slotIndexStr.isEmpty()) {
                 int inputSlot = Integer.parseInt(slotIndexStr);
-                if (inputSlot >= 0 && inputSlot < inventory.getSlots()) {
-                    targetSlot = inputSlot;
-                } else {
-                    if (minecraft.player != null) {
-                        minecraft.player.sendSystemMessage(Component.literal("无效的槽位索引，将使用自动递增槽位"));
+                if (inputSlot >= 0 && inputSlot < SLOT_SIZE) { // 使用页面局部索引
+                    int globalSlot = pageStart + inputSlot;
+                    if (globalSlot < inventory.getSlots()) {
+                        inventory.setStackInSlot(globalSlot, item);
+                        sendUpdatePacket(globalSlot, item, menu);
+                        return;
                     }
                 }
             }
-        } catch (NumberFormatException ignored) {
-            // 如果解析失败，继续使用自动递增槽位
-        }
+        } catch (NumberFormatException ignored) {}
 
-        // 如果没有有效的手动槽位，寻找第一个空槽位
-        if (targetSlot == -1) {
-            for (int i = 0; i < inventory.getSlots(); i++) {
-                if (inventory.getStackInSlot(i).isEmpty()) {
-                    targetSlot = i;
-                    break;
-                }
+        // 自动寻找当前页面的空槽位
+        for (int localIndex = 0; localIndex < SLOT_SIZE; localIndex++) {
+            int globalIndex = pageStart + localIndex;
+            if (globalIndex >= pageEnd) break; // 确保不超过页面范围
+
+            if (inventory.getStackInSlot(globalIndex).isEmpty()) {
+                inventory.setStackInSlot(globalIndex, item);
+                sendUpdatePacket(globalIndex, item, menu);
+                return;
             }
         }
 
-        // 如果找到有效槽位，添加物品
-        if (targetSlot != -1) {
-            inventory.setStackInSlot(targetSlot, item);
-
-            // 发送更新包到服务器
-            if (this.minecraft != null && this.minecraft.player != null &&
-                    this.minecraft.level != null && this.minecraft.level.isClientSide() &&
-                    this.minecraft.player.getServer() != null && minecraft.player.containerMenu instanceof GunViewMenu menu) {
-                CombatDepot.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
-                        menu.getCards().get(menu.getSelectedCardIndex()).getName(),
-                        targetSlot,
-                        item.getItem().getDefaultInstance()
-                ));
-            }
-        } else {
-            if (minecraft != null) {
-                if (minecraft.player != null) {
-                    minecraft.player.sendSystemMessage(Component.literal("没有可用的槽位"));
-                }
-            }
+        // 提示无可用槽位
+        if (minecraft != null && minecraft.player != null) {
+            minecraft.player.sendSystemMessage(Component.literal("当前页面已满"));
         }
     }
 
@@ -312,10 +300,25 @@ public class CardItemConfigScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    private void sendUpdatePacket(int globalSlot, ItemStack item, GunViewMenu menu) {
+        CombatDepot.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
+                card.getName(),
+                globalSlot, // 使用全局槽位索引
+                item.copy()
+        ));
+
+        // 强制刷新显示库存
+        menu.syncDisplayInventory();
+    }
+
     private void updateInventorySerialize() {
         if (this.minecraft != null && this.minecraft.player != null &&
                 this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
             menu.getDisplayHandler().serializeNBT();
         }
+    }
+
+    public CardEditScreen getParentScreen() {
+        return parentScreen;
     }
 }

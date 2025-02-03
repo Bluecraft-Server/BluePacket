@@ -1,6 +1,7 @@
 package top.bluecraft.combatdepot.network;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -49,13 +50,15 @@ public record SyncCardsPacket(List<GunViewMenu.Card> cards, int cardOffset) {
         return new SyncCardsPacket(cards, cardOffset);
     }
 
-    public static void handle(SyncCardsPacket msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            if (Minecraft.getInstance().screen instanceof GunViewScreen screen) {
-                screen.updateCards(msg.cards());
-                screen.setCardOffset(msg.cardOffset()); // 更新偏移量
+    public static void handle(SyncCardsPacket message, Supplier<NetworkEvent.Context> contextSupplier) {
+        NetworkEvent.Context context = contextSupplier.get();
+        context.enqueueWork(() -> {
+            LocalPlayer player = Minecraft.getInstance().player;
+            if (player != null && player.containerMenu instanceof GunViewMenu menu) {
+                menu.setCards(message.cards); // 更新客户端卡片数据
+                menu.setCardOffset(message.cardOffset); // 更新卡片偏移量
             }
         });
-        ctx.get().setPacketHandled(true);
+        context.setPacketHandled(true);
     }
 }

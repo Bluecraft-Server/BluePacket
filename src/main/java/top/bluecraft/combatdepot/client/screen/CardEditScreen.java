@@ -13,6 +13,7 @@ import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @OnlyIn(Dist.CLIENT)
@@ -75,7 +76,11 @@ public class CardEditScreen extends Screen {
 
     private void renderCardPage(GuiGraphics graphics) {
         if (parentScreen.getMinecraft().player != null && parentScreen.getMinecraft().player.containerMenu instanceof GunViewMenu menu) {
-            List<ItemStack> allItems = card.getPageItems(menu.getCurrentPage());
+            List<ItemStack> allItems = new ArrayList<>();
+
+            for(int i = 0; i < menu.getCurrentCard().getInventory().getSlots(); i++) {
+                allItems.add(menu.getCurrentCard().getInventory().getStackInSlot(i));
+            }
 
             // 计算总页数
             int totalPages = (int) Math.ceil((double) allItems.size() / ITEMS_PER_PAGE);
@@ -106,5 +111,9 @@ public class CardEditScreen extends Screen {
                 }
             }
         }
+    }
+
+    public CardConfigScreen getParentScreen() {
+        return parentScreen;
     }
 }

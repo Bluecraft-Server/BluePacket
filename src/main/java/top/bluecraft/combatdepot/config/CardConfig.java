@@ -3,9 +3,12 @@ package top.bluecraft.combatdepot.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.items.ItemStackHandler;
 import top.bluecraft.combatdepot.CombatDepot;
+import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
 import java.io.*;
@@ -175,6 +178,39 @@ public class CardConfig {
     public void removeCard(String name) {
         if (cards != null) {
             cards.removeIf(card -> card.name.equals(name));
+        }
+    }
+
+    public void loadFromGlobalStorage(ServerPlayer player, GlobalCardStorage storage) {
+        // 获取所有卡片配置
+        List<CardConfig.CardEntry> cardEntries = getCards();
+
+        // 初始化全局库存（确保所有卡片库存存在）
+        storage.initializeCards(cardEntries);
+
+        // 遍历所有卡片
+        for (CardConfig.CardEntry cardEntry : cardEntries) {
+            if (!cardEntry.isEnabled()) continue;
+
+            String cardName = cardEntry.getName();
+            ItemStackHandler savedInventory = storage.getInventory(cardName);
+
+            if (savedInventory != null) {
+                // 创建新的 ItemStackHandler 并复制数据
+                ItemStackHandler newInventory = new ItemStackHandler(cardEntry.getInventorySize());
+
+                // 复制已保存的物品数据
+                int slots = Math.min(savedInventory.getSlots(), newInventory.getSlots());
+                for (int i = 0; i < slots; i++) {
+                    ItemStack stack = savedInventory.getStackInSlot(i);
+                    if (!stack.isEmpty()) {
+                        newInventory.setStackInSlot(i, stack.copy());
+                    }
+                }
+
+                // 更新全局库存
+                storage.updateInventory(cardName, newInventory);
+            }
         }
     }
 }

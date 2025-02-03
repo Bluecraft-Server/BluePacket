@@ -55,7 +55,7 @@ jobs:
         if: env.SKIP_BUILD == 'false'
         run: |
           COMMIT_MESSAGE=$(git log -1 --pretty=%B)
-          if [ "$COMMIT_MESSAGE" == "[ci]"* ]; then
+          if [[ "$COMMIT_MESSAGE" == "[ci]"* ]]; then
             echo "SKIP_UPLOAD=false" >> $GITHUB_ENV
           else
             echo "SKIP_UPLOAD=true" >> $GITHUB_ENV

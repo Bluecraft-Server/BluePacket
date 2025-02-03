@@ -32,7 +32,7 @@ jobs:
 
       - name: Set VERSION environment variable
         run: |
-          ORIGINAL_VERSION=$(grep "version:" src/main/resources/plugin.yml | cut -d ' ' -f2 | sed 's/[^0-9.]//g')
+          ORIGINAL_VERSION=$(grep "mod_version=" gradle.properties | cut -d ' ' -f2 | sed 's/[^0-9.]//g')
           echo "Setting VERSION to ${ORIGINAL_VERSION}-${{ env.DATE }}-${{ env.SHA }}"
           echo "VERSION=${ORIGINAL_VERSION}-${{ env.DATE }}-${{ env.SHA }}" >> $GITHUB_ENV
 
@@ -51,34 +51,33 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check if commit message contains [skip] and if branch is master
-        id: check_skip_and_branch
+        id: check_skip
         if: env.SKIP_BUILD == 'false'
         run: |
           COMMIT_MESSAGE=$(git log -1 --pretty=%B)
-          BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
-          if [ "$COMMIT_MESSAGE" == "[ci]"*]; then
-            echo "SKIP_RELEASE=false" >> $GITHUB_ENV
+          if [ "$COMMIT_MESSAGE" == "[ci]"* ]; then
+            echo "SKIP_UPLOAD=false" >> $GITHUB_ENV
           else
-            echo "SKIP_RELEASE=true" >> $GITHUB_ENV
+            echo "SKIP_UPLOAD=true" >> $GITHUB_ENV
           fi
 
-      - name: Update version in plugin.yml
+      - name: Update version in gradle.properties
         if: env.SKIP_BUILD == 'false'
         run: |
-          sed -i "s/\(version: \).*/\1'${{ env.VERSION }}'/" src/main/resources/plugin.yml
+          sed -i "s/\(mod_version= \).*/\1'${{ env.VERSION }}'/" gradle.properties
 
       - name: Build with Gradle
         if: env.SKIP_BUILD == 'false'
-        run: ./gradlew shadowJar
+        run: ./gradlew build
 
       - name: Rename JAR file
         if: env.SKIP_BUILD == 'false'
         id: rename_file
         run: |
-          TARGET_JAR="BasePlugin-${{ env.VERSION }}"
-          SOURCE_JAR=$(find run/plugins -name "*.jar" -print -quit)
-          echo "FINAL_JAR_NAME=${TARGET_JAR}" >> $GITHUB_ENV
-          mv "${SOURCE_JAR}" "${TARGET_JAR}.jar"
+          TARGET_JAR="BM_Updater-${{ env.VERSION }}.jar"
+          SOURCE_JAR=$(find build/libs -name "*.jar" -print -quit)
+          echo "FINAL_JAR_NAME=BM_Updater-${{ env.VERSION }}" >> $GITHUB_ENV
+          mv "${SOURCE_JAR}" "${TARGET_JAR}"
 
       - name: Upload Artifact
         uses: "actions/upload-artifact@v4"
@@ -87,7 +86,7 @@ jobs:
           path: ${{ env.FINAL_JAR_NAME }}.jar
 
       - name: Create Pre-Release and Upload JAR file
-        if: env.SKIP_RELEASE == 'false' && env.SKIP_BUILD == 'false'
+        if: env.SKIP_UPLOAD == 'false' && env.SKIP_BUILD == 'false'
         uses: ncipollo/release-action@v1.15.0
         with:
           tag: ${{ env.VERSION }}

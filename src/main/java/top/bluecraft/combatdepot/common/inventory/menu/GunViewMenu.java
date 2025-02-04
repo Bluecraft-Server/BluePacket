@@ -59,6 +59,7 @@ public class GunViewMenu extends AbstractContainerMenu {
         this.x = pos.getX();
         this.y = pos.getY();
         this.z = pos.getZ();
+        setupSlots(playerInventory);
 
         // 初始化卡牌数据（客户端和服务端都需要）
         CardConfig config = CardConfig.load();
@@ -69,9 +70,7 @@ public class GunViewMenu extends AbstractContainerMenu {
         }
         if (!cards.isEmpty()){
             selectCard(0);
-        };
-
-        setupSlots(playerInventory);
+        }
     }
 
     public void markSlotTaken(int slotIndex) {
@@ -83,12 +82,11 @@ public class GunViewMenu extends AbstractContainerMenu {
         return takenSlots.get(slotIndex);
     }
 
-    // Region: Core Functionality
     public void selectCard(int index) {
         if (index >= 0 && index < cards.size()) {
             this.selectedCardIndex = index;
-            this.currentPage = 0;
-            refreshDisplayInventory();
+            this.currentPage = 0; // 重置为第一页
+            refreshDisplayInventory(); // 刷新显示
             broadcastChanges();
         }
     }
@@ -138,10 +136,13 @@ public class GunViewMenu extends AbstractContainerMenu {
         if (selectedCardIndex == -1) return;
 
         Card card = cards.get(selectedCardIndex);
-        if (page >= 0 && page < card.getTotalPages()) {
+        int totalPages = card.getTotalPages();
+        if (page >= 0 && page < totalPages) {
             this.currentPage = page;
-            refreshDisplayInventory();
+            refreshDisplayInventory(); // 刷新显示
             broadcastChanges();
+        } else {
+            CombatDepot.LOGGER.warn("无效页面: {} (总页数: {})", page, totalPages);
         }
     }
 
@@ -150,6 +151,10 @@ public class GunViewMenu extends AbstractContainerMenu {
 
         Card card = cards.get(selectedCardIndex);
         int startIndex = currentPage * SLOT_SIZE;
+
+        // 调试日志
+        CombatDepot.LOGGER.debug("刷新页面: {}，起始索引: {}", currentPage, startIndex);
+        CombatDepot.LOGGER.debug("卡片: {}，库存大小: {}", card.getName(), card.getInventory().size());
 
         // 从Card的inventory加载到displayHandler
         for (int i = 0; i < SLOT_SIZE; i++) {
@@ -160,6 +165,9 @@ public class GunViewMenu extends AbstractContainerMenu {
                 displayHandler.setStackInSlot(i, ItemStack.EMPTY);
             }
         }
+
+        // 通知客户端同步
+        broadcastChanges();
     }
 
     // Region: Slot Management

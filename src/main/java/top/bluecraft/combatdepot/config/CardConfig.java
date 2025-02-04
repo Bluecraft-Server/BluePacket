@@ -5,15 +5,14 @@ import com.google.gson.GsonBuilder;
 import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.loading.FMLPaths;
-import net.minecraftforge.items.ItemStackHandler;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
 import java.io.*;
+import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -22,11 +21,13 @@ import java.util.List;
 import java.util.Map;
 
 public class CardConfig {
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = new GsonBuilder()
+            .excludeFieldsWithModifiers(Modifier.TRANSIENT)
+            .create();
     private static final String CONFIG_FILE = "cards.json";
 
     private boolean disableDefaultCards;
-    private List<CardEntry> cards;
+    private List<CardEntry> entries;
 
     public static class CardEntry {
         private boolean enabled;
@@ -132,18 +133,18 @@ public class CardConfig {
     private static CardConfig createDefaultConfig() {
         CardConfig config = new CardConfig();
         config.disableDefaultCards = false;
-        config.cards = new ArrayList<>();
+        config.entries = new ArrayList<>();
 
         // 默认卡片
-        config.cards.add(createCardEntry(true, "main_weapon", 1100, "combatdepot:textures/gui/cards/main_weapon.png"));
-        config.cards.add(createCardEntry(true, "secondary_weapon", 770, "combatdepot:textures/gui/cards/secondary_weapon.png"));
-        config.cards.add(createCardEntry(true, "scope", 770, "combatdepot:textures/gui/cards/scope.png"));
-        config.cards.add(createCardEntry(true, "magazine", 770, "combatdepot:textures/gui/cards/magazine.png"));
-        config.cards.add(createCardEntry(true, "gun_module", 770, "combatdepot:textures/gui/cards/gun_module.png"));
-        config.cards.add(createCardEntry(true, "grip", 770, "combatdepot:textures/gui/cards/grip.png"));
-        config.cards.add(createCardEntry(true, "stock", 770, "combatdepot:textures/gui/cards/stock.png"));
-        config.cards.add(createCardEntry(true, "barrel", 770, "combatdepot:textures/gui/cards/barrel.png"));
-        config.cards.add(createCardEntry(true, "bullet", 770, "combatdepot:textures/gui/cards/bullet.png"));
+        config.entries.add(createCardEntry(true, "main_weapon", 1100, "combatdepot:textures/gui/cards/main_weapon.png"));
+        config.entries.add(createCardEntry(true, "secondary_weapon", 770, "combatdepot:textures/gui/cards/secondary_weapon.png"));
+        config.entries.add(createCardEntry(true, "scope", 770, "combatdepot:textures/gui/cards/scope.png"));
+        config.entries.add(createCardEntry(true, "magazine", 770, "combatdepot:textures/gui/cards/magazine.png"));
+        config.entries.add(createCardEntry(true, "gun_module", 770, "combatdepot:textures/gui/cards/gun_module.png"));
+        config.entries.add(createCardEntry(true, "grip", 770, "combatdepot:textures/gui/cards/grip.png"));
+        config.entries.add(createCardEntry(true, "stock", 770, "combatdepot:textures/gui/cards/stock.png"));
+        config.entries.add(createCardEntry(true, "barrel", 770, "combatdepot:textures/gui/cards/barrel.png"));
+        config.entries.add(createCardEntry(true, "bullet", 770, "combatdepot:textures/gui/cards/bullet.png"));
 
         return config;
     }
@@ -158,81 +159,79 @@ public class CardConfig {
         return entry;
     }
 
-    // 初始化卡片库存
     public List<GunViewMenu.Card> createCards() {
-        List<GunViewMenu.Card> cardList = new ArrayList<>();
-
-        // 确保始终使用最新配置
-        List<CardEntry> effectiveCards = this.cards == null || this.cards.isEmpty()
-                ? createDefaultConfig().getCards()
-                : this.cards;
-
-        for (CardEntry entry : effectiveCards) {
+        List<GunViewMenu.Card> cards = new ArrayList<>();
+        for (CardEntry entry : entries) {
             if (entry.isEnabled()) {
-                // 使用配置中的 inventorySize
-                NonNullList<ItemStack> inventory = NonNullList.withSize(entry.getInventorySize(), ItemStack.EMPTY);
-                cardList.add(new GunViewMenu.Card(entry, inventory));
+                NonNullList<ItemStack> inventory = entry.getInventory();
+                if (inventory == null) {
+                    inventory = NonNullList.withSize(entry.getInventorySize(), ItemStack.EMPTY);
+                }
+                cards.add(new GunViewMenu.Card(entry, inventory));
             }
         }
-        return cardList;
+        return cards;
     }
 
     // Getters and Setters
     public boolean isDisableDefaultCards() { return disableDefaultCards; }
     public void setDisableDefaultCards(boolean disableDefaultCards) { this.disableDefaultCards = disableDefaultCards; }
 
-    public List<CardEntry> getCards() {
-        if (cards == null) {
-            cards = new ArrayList<>();
+    public List<CardEntry> getEntries() {
+        if (entries == null) {
+            entries = new ArrayList<>();
         }
-        return cards;
+        return entries;
     }
 
-    public void setCards(List<CardEntry> cards) { this.cards = cards; }
+    public void setEntries(List<CardEntry> entries) { this.entries = entries; }
 
     // 检查卡片是否存在
     public boolean hasCard(String name) {
-        return cards != null && cards.stream().anyMatch(card -> card.name.equals(name));
+        return entries != null && entries.stream().anyMatch(card -> card.name.equals(name));
     }
 
     // 添加新卡片
     public void addCard(CardEntry card) {
-        if (cards == null) {
-            cards = new ArrayList<>();
+        if (entries == null) {
+            entries = new ArrayList<>();
         }
         if (!hasCard(card.name)) {
-            cards.add(card);
+            entries.add(card);
         }
     }
 
     // 移除卡片
     public void removeCard(String name) {
-        if (cards != null) {
-            cards.removeIf(card -> card.name.equals(name));
+        if (entries != null) {
+            entries.removeIf(card -> card.name.equals(name));
         }
     }
 
-    public void loadFromGlobalStorage(Player player, GlobalCardStorage storage) {
-        // 数据加载前打印日志
-        CombatDepot.LOGGER.debug("开始加载玩家 {} 的卡片数据", player.getName().getString());
+    public void loadFromGlobalStorage(ServerPlayer player, GlobalCardStorage storage) {
+        for (CardEntry entry : entries) {
+            if (entry.isEnabled()) {
+                // 从全局存储获取该卡片的物品栏
+                NonNullList<ItemStack> inventory = storage.getInventory(entry.getName());
 
-        for (CardEntry entry : cards) {
-            NonNullList<ItemStack> inventory = storage.getInventory(entry.getName());
-            // 打印每个卡片的加载状态
-            CombatDepot.LOGGER.debug("加载卡片 {}: 物品栏大小 = {}", entry.getName(), inventory.size());
+                // 如果物品栏大小与配置不符，调整大小
+                if (inventory.size() != entry.getInventorySize()) {
+                    NonNullList<ItemStack> newInventory = NonNullList.withSize(
+                            entry.getInventorySize(),
+                            ItemStack.EMPTY
+                    );
 
-            // 确保数据被正确加载
-            if (!inventory.isEmpty()) {
-                entry.setInventory(inventory);
-                // 打印加载的非空物品
-                for (int i = 0; i < inventory.size(); i++) {
-                    if (!inventory.get(i).isEmpty()) {
-                        CombatDepot.LOGGER.debug("槽位 {} 加载到物品: {}",
-                                i, inventory.get(i).getDisplayName().getString());
+                    // 复制现有数据
+                    for (int i = 0; i < Math.min(inventory.size(), entry.getInventorySize()); i++) {
+                        newInventory.set(i, inventory.get(i));
                     }
+
+                    // 更新存储
+                    storage.updateInventory(entry.getName(), newInventory);
+                    entry.setInventory(newInventory);
+                } else {
+                    entry.setInventory(inventory);
                 }
-            } else {
-                CombatDepot.LOGGER.warn("卡片 {} 的物品栏为空", entry.getName());
             }
         }
     }

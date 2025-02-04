@@ -7,15 +7,15 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
+import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.common.capability.GeneralTerminalInventoryCapability;
 
 public class GeneralTerminal extends Item {
-    private static final String NBT_INVENTORIES_TAG = "CardInventories";
-
     public GeneralTerminal() {
         super(new Properties().stacksTo(1));
     }
@@ -23,6 +23,20 @@ public class GeneralTerminal extends Item {
     @Override
     public @Nullable ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundTag nbt) {
         return new GeneralTerminalInventoryCapability();
+    }
+
+    @Override
+    public CompoundTag getShareTag(ItemStack stack) {
+        CompoundTag nbt = stack.getOrCreateTag();
+        stack.getCapability(ForgeCapabilities.ITEM_HANDLER, null).ifPresent(capability -> nbt.put("Inventory", ((ItemStackHandler) capability).serializeNBT()));
+        return nbt;
+    }
+
+    @Override
+    public void readShareTag(ItemStack stack, @Nullable CompoundTag nbt) {
+        super.readShareTag(stack, nbt);
+        if (nbt != null)
+            stack.getCapability(ForgeCapabilities.ITEM_HANDLER, null).ifPresent(capability -> ((ItemStackHandler) capability).deserializeNBT((CompoundTag) nbt.get("Inventory")));
     }
 
     @Override

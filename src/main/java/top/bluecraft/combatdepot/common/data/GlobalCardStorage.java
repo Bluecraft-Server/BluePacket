@@ -8,97 +8,88 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.saveddata.SavedData;
 import org.jetbrains.annotations.NotNull;
-import top.bluecraft.combatdepot.config.CardConfig;
-import top.bluecraft.combatdepot.network.SyncCardsPacket;
+import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class GlobalCardStorage extends SavedData {
-    private static final String STORAGE_NAME = "global_card_storage";
-    private static final int DEFAULT_SLOT_SIZE = 110;
+    // 存储每个卡片名称对应的物品栏数据
+    private final Map<String, NonNullList<ItemStack>> cardInventories = new HashMap<>();
 
-    // 全局共享库存
-    private final Map<String, NonNullList<ItemStack>> sharedInventories = new HashMap<>();
+    @Override
+    public @NotNull CompoundTag save(CompoundTag tag) {
+        CompoundTag cardsData = new CompoundTag();
 
-    public static GlobalCardStorage get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(
-                GlobalCardStorage::load,
-                GlobalCardStorage::new,
-                STORAGE_NAME
-        );
+        // 遍历所有卡片数据
+        cardInventories.forEach((cardName, inventory) -> {
+            CompoundTag cardTag = new CompoundTag();
+            ListTag itemsList = new ListTag();
+
+            // 保存每个槽位的物品
+            for (int i = 0; i < inventory.size(); i++) {
+                ItemStack stack = inventory.get(i);
+                if (!stack.isEmpty()) {
+                    CompoundTag slotTag = new CompoundTag();
+                    slotTag.putInt("Slot", i);
+                    stack.save(slotTag);
+                    itemsList.add(slotTag);
+                }
+            }
+
+            cardTag.put("Items", itemsList);
+            cardTag.putInt("Size", inventory.size());
+            cardsData.put(cardName, cardTag);
+        });
+
+        tag.put("Cards", cardsData);
+        return tag;
     }
 
-    private static GlobalCardStorage load(CompoundTag tag) {
+    public static GlobalCardStorage load(CompoundTag tag) {
         GlobalCardStorage storage = new GlobalCardStorage();
-        if (tag.contains("SharedInventories", Tag.TAG_COMPOUND)) {
-            CompoundTag inventoriesTag = tag.getCompound("SharedInventories");
+        storage.cardInventories.clear();
 
-            for (String cardName : inventoriesTag.getAllKeys()) {
-                CompoundTag cardTag = inventoriesTag.getCompound(cardName);
-                NonNullList<ItemStack> inventory = NonNullList.withSize(DEFAULT_SLOT_SIZE, ItemStack.EMPTY);
+        if (tag.contains("Cards", Tag.TAG_COMPOUND)) {
+            CompoundTag cardsData = tag.getCompound("Cards");
 
-                // 加载物品数据
-                SyncCardsPacket.getList(cardTag, inventory);
+            // 遍历所有卡片
+            for (String cardName : cardsData.getAllKeys()) {
+                CompoundTag cardTag = cardsData.getCompound(cardName);
+                int size = cardTag.getInt("Size");
+                NonNullList<ItemStack> inventory = NonNullList.withSize(size, ItemStack.EMPTY);
 
-                storage.sharedInventories.put(cardName, inventory);
+                // 加载物品
+                ListTag itemsList = cardTag.getList("Items", Tag.TAG_COMPOUND);
+                for (int i = 0; i < itemsList.size(); i++) {
+                    CompoundTag slotTag = itemsList.getCompound(i);
+                    int slot = slotTag.getInt("Slot");
+                    if (slot >= 0 && slot < size) {
+                        inventory.set(slot, ItemStack.of(slotTag));
+                    }
+                }
+
+                storage.cardInventories.put(cardName, inventory);
             }
         }
         return storage;
     }
 
-    @Override
-    public @NotNull CompoundTag save(CompoundTag tag) {
-        CompoundTag inventoriesTag = new CompoundTag();
-        sharedInventories.forEach((cardName, inventory) -> {
-            CompoundTag cardTag = new CompoundTag();
-            ListTag itemsTag = new ListTag();
-
-            // 保存物品数据
-            for (int i = 0; i < inventory.size(); i++) {
-                ItemStack stack = inventory.get(i);
-                if (!stack.isEmpty()) {
-                    CompoundTag itemTag = new CompoundTag();
-                    itemTag.putInt("Slot", i);
-                    stack.save(itemTag);
-                    itemsTag.add(itemTag);
-                }
-            }
-
-            cardTag.put("Items", itemsTag);
-            inventoriesTag.put(cardName, cardTag);
-        });
-        tag.put("SharedInventories", inventoriesTag);
-        return tag;
-    }
-
-    public void initializeCards(List<CardConfig.CardEntry> cardEntries) {
-        // 清理无效卡片库存
-        sharedInventories.keySet().removeIf(cardName ->
-                cardEntries.stream().noneMatch(entry -> entry.getName().equals(cardName) && entry.isEnabled())
-        );
-
-        // 初始化缺失的卡片库存
-        cardEntries.stream()
-                .filter(CardConfig.CardEntry::isEnabled)
-                .forEach(entry -> {
-                    sharedInventories.computeIfAbsent(entry.getName(),
-                            k -> NonNullList.withSize(entry.getInventorySize(), ItemStack.EMPTY)
-                    );
-                });
-        setDirty();
-    }
-
     public NonNullList<ItemStack> getInventory(String cardName) {
-        return sharedInventories.getOrDefault(cardName, NonNullList.withSize(DEFAULT_SLOT_SIZE, ItemStack.EMPTY));
+        return cardInventories.computeIfAbsent(cardName,
+                k -> NonNullList.withSize(GunViewMenu.SLOT_SIZE, ItemStack.EMPTY));
     }
 
     public void updateInventory(String cardName, NonNullList<ItemStack> inventory) {
-        NonNullList<ItemStack> oldInventory = sharedInventories.get(cardName);
-        if (oldInventory == null || !oldInventory.equals(inventory)) {
-            sharedInventories.put(cardName, inventory);
-            setDirty();
-        }
+        cardInventories.put(cardName, inventory);
+        setDirty();
+    }
+
+    public static GlobalCardStorage get(ServerLevel level) {
+        return level.getDataStorage().computeIfAbsent(
+                GlobalCardStorage::load,
+                GlobalCardStorage::new,
+                "card_storage" // 数据的唯一标识符
+        );
     }
 }

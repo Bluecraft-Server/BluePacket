@@ -19,7 +19,7 @@ public class CardLanguageManager {
     public static void loadTranslations(CardConfig config) {
         cardTranslations.clear();
 
-        for (CardConfig.CardEntry card : config.getCards()) {
+        for (CardConfig.CardEntry card : config.getEntries()) {
             if (card.getTranslations() != null) {
                 for (Map.Entry<String, String> translation : card.getTranslations().entrySet()) {
                     cardTranslations

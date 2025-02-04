@@ -1,10 +1,5 @@
 package top.bluecraft.combatdepot.api;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
 import net.minecraftforge.items.ItemStackHandler;
 import top.bluecraft.combatdepot.common.page.Page;
 

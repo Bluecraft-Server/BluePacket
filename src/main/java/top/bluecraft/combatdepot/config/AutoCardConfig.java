@@ -30,7 +30,7 @@ public class AutoCardConfig {
                     .substring(texture.getPath().lastIndexOf('/') + 1);
 
             // 检查这个卡片是否已经存在于配置中
-            boolean exists = config.getCards().stream()
+            boolean exists = config.getEntries().stream()
                     .anyMatch(card -> card.getName().equals(cardName));
 
             if (!exists) {
@@ -42,7 +42,7 @@ public class AutoCardConfig {
                 newCard.setTexture(texture.getNamespace() + ":" + texture.getPath());
 
                 // 添加到配置中
-                config.getCards().add(newCard);
+                config.getEntries().add(newCard);
                 configChanged = true;
 
                 CombatDepot.LOGGER.info("Added new card configuration for texture: {}", cardName);

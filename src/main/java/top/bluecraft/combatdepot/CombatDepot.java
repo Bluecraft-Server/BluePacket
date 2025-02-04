@@ -68,12 +68,6 @@ public class CombatDepot {
         bus.addListener(CombatDepot::onGatherData);
     }
 
-    private void clientSetup(final FMLClientSetupEvent event) {
-        event.enqueueWork(() -> {
-            CombatDepot.addNetworkMessage(ClientboundCardSelectionPacket.class, ClientboundCardSelectionPacket::encode, ClientboundCardSelectionPacket::decode, ClientboundCardSelectionPacket::handle);
-        });
-    }
-
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("HELLO FROM COMMON SETUP");
         LOGGER.info("DIRT BLOCK >> {}", ForgeRegistries.BLOCKS.getKey(Blocks.DIRT));
@@ -83,11 +77,8 @@ public class CombatDepot {
                     AutoCardConfig.updateConfigWithNewTextures();
                     CombatDepot.addNetworkMessage(RequestCardsPacket.class, RequestCardsPacket::encode, RequestCardsPacket::decode, RequestCardsPacket::handle);
                     CombatDepot.addNetworkMessage(SyncCardsPacket.class, SyncCardsPacket::encode, SyncCardsPacket::decode, SyncCardsPacket::handle);
-                    CombatDepot.addNetworkMessage(PageChangePacket.class, PageChangePacket::encode, PageChangePacket::decode, PageChangePacket::handle);
                     CombatDepot.addNetworkMessage(UpdateSlotMessage.class, UpdateSlotMessage::encode, UpdateSlotMessage::decode, UpdateSlotMessage::handle);
-                    CombatDepot.addNetworkMessage(CardSelectionMessage.class, CardSelectionMessage::encode, CardSelectionMessage::decode, CardSelectionMessage::handle);
                     CombatDepot.addNetworkMessage(AddItemToCardMessage.class, AddItemToCardMessage::encode, AddItemToCardMessage::decode, AddItemToCardMessage::handle);
-                    CombatDepot.addNetworkMessage(LoadPageMessage.class, LoadPageMessage::encode, LoadPageMessage::decode, LoadPageMessage::handle);
                 }
         );
     }

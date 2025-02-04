@@ -28,7 +28,7 @@ public class GunViewMenu extends AbstractContainerMenu {
     // Region: Constants
     private static final int GRID_ROWS = 10;
     private static final int GRID_COLS = 11;
-    public static final int SLOT_SIZE = 110; // 10*11 - 最后一个槽位
+    private static final int SLOT_SIZE = 110; // 10*11 - 最后一个槽位
     private static final int SLOT_SPACING = 18;
 
     // GUI 布局坐标
@@ -427,6 +427,10 @@ public class GunViewMenu extends AbstractContainerMenu {
             return cards.get(selectedCardIndex);
         }
         return null; // 如果没有选中卡片，返回 null
+    }
+
+    public static int getSlotSize() {
+        return SLOT_SIZE;
     }
 
     @Override

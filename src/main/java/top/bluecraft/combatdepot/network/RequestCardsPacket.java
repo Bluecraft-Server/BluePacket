@@ -35,6 +35,11 @@ public class RequestCardsPacket {
                 // 获取服务端数据
                 GlobalCardStorage storage = GlobalCardStorage.get(player.serverLevel());
                 CardConfig config = CardConfig.load();
+
+                System.out.println("发送请求");
+                config.loadFromGlobalStorage(player, storage);
+                List<GunViewMenu.Card> cards = menu.getCards();
+
                 for (GunViewMenu.Card card : menu.getCards()) {
                     NonNullList<ItemStack> savedInventory = storage.getInventory(card.getName());
                     if (savedInventory != null) {
@@ -45,11 +50,6 @@ public class RequestCardsPacket {
                         }
                     }
                 }
-
-                System.out.println("发送请求");
-                // 加载存储的数据
-                config.loadFromGlobalStorage(player, storage);
-                List<GunViewMenu.Card> cards = config.createCards();
 
                 // 发送数据回客户端
                 CombatDepot.PACKET_HANDLER.send(

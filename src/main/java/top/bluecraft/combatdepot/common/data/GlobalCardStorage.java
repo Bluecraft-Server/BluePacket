@@ -77,7 +77,7 @@ public class GlobalCardStorage extends SavedData {
 
     public NonNullList<ItemStack> getInventory(String cardName) {
         return cardInventories.computeIfAbsent(cardName,
-                k -> NonNullList.withSize(GunViewMenu.SLOT_SIZE, ItemStack.EMPTY));
+                k -> NonNullList.withSize(GunViewMenu.getSlotSize(), ItemStack.EMPTY));
     }
 
     public void updateInventory(String cardName, NonNullList<ItemStack> inventory) {

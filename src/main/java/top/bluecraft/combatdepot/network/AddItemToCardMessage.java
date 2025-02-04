@@ -52,7 +52,7 @@ public class AddItemToCardMessage {
                         .orElse(null);
 
                 if (selectedCard != null) {
-                    selectedCard.getInventory().setStackInSlot(slot, stack);
+                    selectedCard.getInventory().set(slot, stack);
 
                     // 保存到GlobalCardStorage
                     GlobalCardStorage storage = GlobalCardStorage.get(player.serverLevel());

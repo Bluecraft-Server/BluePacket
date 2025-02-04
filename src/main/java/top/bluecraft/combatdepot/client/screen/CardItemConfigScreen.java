@@ -5,8 +5,12 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -17,8 +21,10 @@ import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.api.ICardInventory;
+import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 import top.bluecraft.combatdepot.network.AddItemToCardMessage;
+import top.bluecraft.combatdepot.network.SyncCardsPacket;
 import top.bluecraft.combatdepot.util.ItemHooks;
 
 import java.util.ArrayList;
@@ -100,11 +106,11 @@ public class CardItemConfigScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("D"), button -> {
                     try {
                         int slotIndex = Integer.parseInt(deleteSlotInput.getValue());
-                        ItemStackHandler inventory = card.getInventory();
+                        NonNullList<ItemStack> inventory = card.getInventory();
 
-                        if (slotIndex >= 0 && slotIndex < inventory.getSlots()) {
+                        if (slotIndex >= 0 && slotIndex < inventory.size()) {
                             // 将指定槽位的物品设为空
-                            inventory.setStackInSlot(slotIndex, ItemStack.EMPTY);
+                            inventory.set(slotIndex, ItemStack.EMPTY);
 
                             // 发送更新包到服务器
                             if (this.minecraft != null && this.minecraft.player != null &&
@@ -246,12 +252,12 @@ public class CardItemConfigScreen extends Screen {
     }
 
     private void addItemToCard(ItemStack item) {
-        ItemStackHandler inventory = card.getInventory();
+        NonNullList<ItemStack> inventory = card.getInventory();
         GunViewMenu menu = parentScreen.getParentScreen().getParentScreen().getMenu();
 
         // 获取当前页面的起始槽位
         int pageStart = menu.getCurrentPage() * SLOT_SIZE;
-        int pageEnd = Math.min(pageStart + SLOT_SIZE, inventory.getSlots());
+        int pageEnd = Math.min(pageStart + SLOT_SIZE, inventory.size());
 
         // 优先使用手动指定的槽位（需在页面范围内）
         try {
@@ -260,8 +266,8 @@ public class CardItemConfigScreen extends Screen {
                 int inputSlot = Integer.parseInt(slotIndexStr);
                 if (inputSlot >= 0 && inputSlot < SLOT_SIZE) { // 使用页面局部索引
                     int globalSlot = pageStart + inputSlot;
-                    if (globalSlot < inventory.getSlots()) {
-                        inventory.setStackInSlot(globalSlot, item);
+                    if (globalSlot < inventory.size()) {
+                        inventory.set(globalSlot, item);
                         sendUpdatePacket(globalSlot, item, menu);
                         return;
                     }
@@ -274,8 +280,8 @@ public class CardItemConfigScreen extends Screen {
             int globalIndex = pageStart + localIndex;
             if (globalIndex >= pageEnd) break; // 确保不超过页面范围
 
-            if (inventory.getStackInSlot(globalIndex).isEmpty()) {
-                inventory.setStackInSlot(globalIndex, item);
+            if (inventory.get(globalIndex).isEmpty()) {
+                inventory.set(globalIndex, item);
                 sendUpdatePacket(globalIndex, item, menu);
                 return;
             }
@@ -312,9 +318,18 @@ public class CardItemConfigScreen extends Screen {
     }
 
     private void updateInventorySerialize() {
-        if (this.minecraft != null && this.minecraft.player != null &&
+        if (this.minecraft != null &&
+                this.minecraft.player != null &&
                 this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
-            menu.getDisplayHandler().serializeNBT();
+
+            // 1. 获取当前选中的卡片
+            GunViewMenu.Card currentCard = menu.getCurrentCard();
+            if (currentCard == null) return;
+
+            // 5. 同步到客户端（如果需要）
+            CombatDepot.PACKET_HANDLER.sendToServer(
+                    new SyncCardsPacket(menu.getCards(), menu.getCardOffset())
+            );
         }
     }
 

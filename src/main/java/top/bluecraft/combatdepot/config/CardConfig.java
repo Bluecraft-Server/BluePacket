@@ -2,8 +2,10 @@ package top.bluecraft.combatdepot.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.items.ItemStackHandler;
@@ -32,6 +34,7 @@ public class CardConfig {
         private int inventorySize;
         private String texture;
         private Map<String, String> translations;
+        private NonNullList<ItemStack> inventory;
 
 
 
@@ -61,6 +64,34 @@ public class CardConfig {
         public void setTranslations(Map<String, String> translations) { this.translations = translations; }
         public void addTranslation(String lang, String text) {
             getTranslations().put(lang, text);
+        }
+
+        public void setInventory(NonNullList<ItemStack> inventory) {
+            if (inventory == null) {
+                CombatDepot.LOGGER.error("Attempted to set null inventory for card: {}", name);
+                return;
+            }
+
+            // 如果传入的inventory大小与设定的inventorySize不一致，进行调整
+            if (inventory.size() != this.inventorySize) {
+                NonNullList<ItemStack> newInventory = NonNullList.withSize(this.inventorySize, ItemStack.EMPTY);
+                // 复制数据，确保不超出范围
+                for (int i = 0; i < Math.min(inventory.size(), this.inventorySize); i++) {
+                    newInventory.set(i, inventory.get(i));
+                }
+                this.inventory = newInventory;
+                CombatDepot.LOGGER.debug("Adjusted inventory size from {} to {} for card: {}",
+                        inventory.size(), this.inventorySize, name);
+            } else {
+                this.inventory = inventory;
+            }
+        }
+
+        public NonNullList<ItemStack> getInventory() {
+            if (this.inventory == null) {
+                this.inventory = NonNullList.withSize(this.inventorySize, ItemStack.EMPTY);
+            }
+            return this.inventory;
         }
     }
 
@@ -139,7 +170,7 @@ public class CardConfig {
         for (CardEntry entry : effectiveCards) {
             if (entry.isEnabled()) {
                 // 使用配置中的 inventorySize
-                ItemStackHandler inventory = new ItemStackHandler(entry.getInventorySize());
+                NonNullList<ItemStack> inventory = NonNullList.withSize(entry.getInventorySize(), ItemStack.EMPTY);
                 cardList.add(new GunViewMenu.Card(entry, inventory));
             }
         }
@@ -181,35 +212,27 @@ public class CardConfig {
         }
     }
 
-    public void loadFromGlobalStorage(ServerPlayer player, GlobalCardStorage storage) {
-        // 获取所有卡片配置
-        List<CardConfig.CardEntry> cardEntries = getCards();
+    public void loadFromGlobalStorage(Player player, GlobalCardStorage storage) {
+        // 数据加载前打印日志
+        CombatDepot.LOGGER.debug("开始加载玩家 {} 的卡片数据", player.getName().getString());
 
-        // 初始化全局库存（确保所有卡片库存存在）
-        storage.initializeCards(cardEntries);
+        for (CardEntry entry : cards) {
+            NonNullList<ItemStack> inventory = storage.getInventory(entry.getName());
+            // 打印每个卡片的加载状态
+            CombatDepot.LOGGER.debug("加载卡片 {}: 物品栏大小 = {}", entry.getName(), inventory.size());
 
-        // 遍历所有卡片
-        for (CardConfig.CardEntry cardEntry : cardEntries) {
-            if (!cardEntry.isEnabled()) continue;
-
-            String cardName = cardEntry.getName();
-            ItemStackHandler savedInventory = storage.getInventory(cardName);
-
-            if (savedInventory != null) {
-                // 创建新的 ItemStackHandler 并复制数据
-                ItemStackHandler newInventory = new ItemStackHandler(cardEntry.getInventorySize());
-
-                // 复制已保存的物品数据
-                int slots = Math.min(savedInventory.getSlots(), newInventory.getSlots());
-                for (int i = 0; i < slots; i++) {
-                    ItemStack stack = savedInventory.getStackInSlot(i);
-                    if (!stack.isEmpty()) {
-                        newInventory.setStackInSlot(i, stack.copy());
+            // 确保数据被正确加载
+            if (!inventory.isEmpty()) {
+                entry.setInventory(inventory);
+                // 打印加载的非空物品
+                for (int i = 0; i < inventory.size(); i++) {
+                    if (!inventory.get(i).isEmpty()) {
+                        CombatDepot.LOGGER.debug("槽位 {} 加载到物品: {}",
+                                i, inventory.get(i).getDisplayName().getString());
                     }
                 }
-
-                // 更新全局库存
-                storage.updateInventory(cardName, newInventory);
+            } else {
+                CombatDepot.LOGGER.warn("卡片 {} 的物品栏为空", entry.getName());
             }
         }
     }

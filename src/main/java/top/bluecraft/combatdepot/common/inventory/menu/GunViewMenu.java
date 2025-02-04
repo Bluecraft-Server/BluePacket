@@ -1,6 +1,7 @@
 package top.bluecraft.combatdepot.common.inventory.menu;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -17,8 +18,9 @@ import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.config.CardConfig;
 import top.bluecraft.combatdepot.init.MenuRegistration;
-import top.bluecraft.combatdepot.network.SlotTakeMessage;
+import top.bluecraft.combatdepot.network.RequestCardsPacket;
 import top.bluecraft.combatdepot.network.SyncCardsPacket;
+import top.bluecraft.combatdepot.network.UpdateSlotMessage;
 
 import java.util.*;
 
@@ -40,7 +42,7 @@ public class GunViewMenu extends AbstractContainerMenu {
     private final Player player;
     private final Level world;
     private final int x, y, z;
-    private List<Card> cards = new ArrayList<>();
+    private List<Card> cards;
     private int selectedCardIndex = -1;
     private int currentPage = 0;
     private int cardOffset = 0;
@@ -62,15 +64,14 @@ public class GunViewMenu extends AbstractContainerMenu {
         CardConfig config = CardConfig.load();
         this.cards = config.createCards();
 
-        if (!world.isClientSide) {
-            ServerPlayer serverPlayer = (ServerPlayer) player;
-            GlobalCardStorage storage = GlobalCardStorage.get(serverPlayer.serverLevel());
-            config.loadFromGlobalStorage(serverPlayer, storage);
-            this.cards = config.createCards();
+        if (world.isClientSide) {
+            CombatDepot.PACKET_HANDLER.sendToServer(new RequestCardsPacket());
         }
+        if (!cards.isEmpty()){
+            selectCard(0);
+        };
 
         setupSlots(playerInventory);
-        if (!cards.isEmpty()) selectCard(0);
     }
 
     public void markSlotTaken(int slotIndex) {
@@ -153,8 +154,8 @@ public class GunViewMenu extends AbstractContainerMenu {
         // 从Card的inventory加载到displayHandler
         for (int i = 0; i < SLOT_SIZE; i++) {
             int actualIndex = startIndex + i;
-            if (actualIndex < card.getInventory().getSlots()) {
-                displayHandler.setStackInSlot(i, card.getInventory().getStackInSlot(actualIndex).copy());
+            if (actualIndex < card.getInventory().size()) {
+                displayHandler.setStackInSlot(i, card.getInventory().get(actualIndex).copy());
             } else {
                 displayHandler.setStackInSlot(i, ItemStack.EMPTY);
             }
@@ -320,17 +321,38 @@ public class GunViewMenu extends AbstractContainerMenu {
         return true;
     }
 
-    private void savePersistentData() {
-        ServerPlayer serverPlayer = (ServerPlayer) player;
-        GlobalCardStorage storage = GlobalCardStorage.get(serverPlayer.serverLevel());
+    public void savePersistentData() {
+        if (player.getServer() == null) return;
+
+        GlobalCardStorage storage = GlobalCardStorage.get(player.getServer().overworld());
 
         cards.forEach(card -> {
-            ItemStackHandler handler = card.getInventory();
-            storage.updateInventory(card.getName(), handler);
+            NonNullList<ItemStack> globalInventory = storage.getInventory(card.getName());
+            NonNullList<ItemStack> currentInventory = card.getInventory();
+
+            // 添加数据验证
+            if (currentInventory == null || currentInventory.isEmpty()) {
+                CombatDepot.LOGGER.warn("Card {} has empty inventory!", card.getName());
+                return;
+            }
+
+            // 确保globalInventory大小正确
+            if (globalInventory.size() != currentInventory.size()) {
+                globalInventory = NonNullList.withSize(currentInventory.size(), ItemStack.EMPTY);
+            }
+
+            // 只保存非空物品
+            for (int i = 0; i < currentInventory.size(); i++) {
+                ItemStack stack = currentInventory.get(i);
+                if (!stack.isEmpty()) {
+                    globalInventory.set(i, stack.copy());
+                    CombatDepot.LOGGER.debug("Saved item in slot {}: {}", i, stack.getDisplayName().getString());
+                }
+            }
+
+            storage.updateInventory(card.getName(), globalInventory);
         });
-        if (!player.level().isClientSide()) {
-            System.out.println("Saving persistent data");
-        }
+
         storage.setDirty();
     }
 
@@ -392,7 +414,6 @@ public class GunViewMenu extends AbstractContainerMenu {
         return takenSlots;
     }
 
-    // GunViewMenu 类中添加以下方法
     public Card getCurrentCard() {
         if (selectedCardIndex >= 0 && selectedCardIndex < cards.size()) {
             return cards.get(selectedCardIndex);
@@ -418,42 +439,45 @@ public class GunViewMenu extends AbstractContainerMenu {
         return cardOffset;
     }
 
-    // Region: Helper Classes
     public static class Card {
         private final String name;
-        private ItemStackHandler inventory;
+        private NonNullList<ItemStack> inventory;
         private final int slotsPerPage;
         private final ResourceLocation texture;
 
-        public Card(CardConfig.CardEntry entry, ItemStackHandler inventory) {
+        public Card(CardConfig.CardEntry entry, NonNullList<ItemStack> inventory) {
             this.name = entry.getName();
             this.inventory = inventory;
             this.slotsPerPage = SLOT_SIZE;
             this.texture = entry.getTexture();
         }
 
+        public void setInventory(NonNullList<ItemStack> inventory) {
+            if (inventory == null) {
+                CombatDepot.LOGGER.error("Attempted to set null inventory for card: {}", name);
+                return;
+            }
+            this.inventory = inventory;
+        }
+
         public List<ItemStack> getPageItems(int page) {
             int start = page * slotsPerPage;
-            int end = Math.min(start + slotsPerPage, inventory.getSlots());
+            int end = Math.min(start + slotsPerPage, inventory.size());
 
             List<ItemStack> items = new ArrayList<>();
             for (int i = start; i < end; i++) {
-                items.add(inventory.getStackInSlot(i));
+                items.add(inventory.get(i));
             }
             return items;
         }
 
         public int getTotalPages() {
-            return (int) Math.ceil((double) inventory.getSlots() / slotsPerPage);
+            return (int) Math.ceil((double) inventory.size() / slotsPerPage);
         }
 
         // Getters
         public String getName() { return name; }
-        public ItemStackHandler getInventory() { return inventory; }
-
-        public void setInventory(ItemStackHandler inventory) {
-            this.inventory = inventory;
-        }
+        public NonNullList<ItemStack> getInventory() { return inventory; }
 
         public int getSlotsPerPage() {
             return slotsPerPage;
@@ -463,7 +487,6 @@ public class GunViewMenu extends AbstractContainerMenu {
             return texture;
         }
     }
-
     private static class DynamicSlot extends SlotItemHandler {
         private final GunViewMenu menu;
 
@@ -479,15 +502,29 @@ public class GunViewMenu extends AbstractContainerMenu {
             Card currentCard = menu.getCurrentCard();
             if (currentCard != null) {
                 int actualIndex = menu.getCurrentPage() * SLOT_SIZE + getSlotIndex();
-                if (actualIndex < currentCard.getInventory().getSlots()) {
-                    currentCard.getInventory().setStackInSlot(actualIndex, stack.copy());
+                NonNullList<ItemStack> inventory = currentCard.getInventory();
+
+                // 确保索引在有效范围内
+                if (actualIndex >= 0 && actualIndex < inventory.size()) {
+                    inventory.set(actualIndex, stack.copy());
+                } else {
+                    CombatDepot.LOGGER.error("无效槽位索引: {} (库存大小: {})", actualIndex, inventory.size());
                 }
             }
 
-            // 服务端保存数据
-            if (!menu.getWorld().isClientSide()) {
-                menu.savePersistentData();
+            if (menu.getWorld().isClientSide()) { // 仅在客户端触发
+                if (currentCard != null) {
+                    int actualIndex = menu.getCurrentPage() * SLOT_SIZE + getSlotIndex();
+                    CombatDepot.PACKET_HANDLER.sendToServer(
+                            new UpdateSlotMessage(
+                                    currentCard.getName(),
+                                    actualIndex,
+                                    stack.copy()
+                            )
+                    );
+                }
             }
+
             menu.broadcastChanges();
         }
     }

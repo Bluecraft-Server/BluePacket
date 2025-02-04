@@ -76,11 +76,8 @@ public class CardEditScreen extends Screen {
 
     private void renderCardPage(GuiGraphics graphics) {
         if (parentScreen.getMinecraft().player != null && parentScreen.getMinecraft().player.containerMenu instanceof GunViewMenu menu) {
-            List<ItemStack> allItems = new ArrayList<>();
 
-            for(int i = 0; i < menu.getCurrentCard().getInventory().getSlots(); i++) {
-                allItems.add(menu.getCurrentCard().getInventory().getStackInSlot(i));
-            }
+            List<ItemStack> allItems = new ArrayList<>(menu.getCurrentCard().getInventory());
 
             // 计算总页数
             int totalPages = (int) Math.ceil((double) allItems.size() / ITEMS_PER_PAGE);

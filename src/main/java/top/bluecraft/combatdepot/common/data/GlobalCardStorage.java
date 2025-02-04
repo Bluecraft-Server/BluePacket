@@ -1,12 +1,15 @@
 package top.bluecraft.combatdepot.common.data;
 
+import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.config.CardConfig;
+import top.bluecraft.combatdepot.network.SyncCardsPacket;
 
 import java.util.HashMap;
 import java.util.List;
@@ -17,7 +20,7 @@ public class GlobalCardStorage extends SavedData {
     private static final int DEFAULT_SLOT_SIZE = 110;
 
     // 全局共享库存
-    private final Map<String, ItemStackHandler> sharedInventories = new HashMap<>();
+    private final Map<String, NonNullList<ItemStack>> sharedInventories = new HashMap<>();
 
     public static GlobalCardStorage get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
@@ -34,18 +37,12 @@ public class GlobalCardStorage extends SavedData {
 
             for (String cardName : inventoriesTag.getAllKeys()) {
                 CompoundTag cardTag = inventoriesTag.getCompound(cardName);
-                ItemStackHandler handler = new ItemStackHandler(DEFAULT_SLOT_SIZE);
-                handler.deserializeNBT(cardTag);
+                NonNullList<ItemStack> inventory = NonNullList.withSize(DEFAULT_SLOT_SIZE, ItemStack.EMPTY);
 
-                if (handler.getSlots() != DEFAULT_SLOT_SIZE) {
-                    ItemStackHandler newHandler = new ItemStackHandler(DEFAULT_SLOT_SIZE);
-                    for (int i = 0; i < Math.min(handler.getSlots(), DEFAULT_SLOT_SIZE); i++) {
-                        newHandler.setStackInSlot(i, handler.getStackInSlot(i));
-                    }
-                    handler = newHandler;
-                }
+                // 加载物品数据
+                SyncCardsPacket.getList(cardTag, inventory);
 
-                storage.sharedInventories.put(cardName, handler);
+                storage.sharedInventories.put(cardName, inventory);
             }
         }
         return storage;
@@ -54,8 +51,23 @@ public class GlobalCardStorage extends SavedData {
     @Override
     public @NotNull CompoundTag save(CompoundTag tag) {
         CompoundTag inventoriesTag = new CompoundTag();
-        sharedInventories.forEach((cardName, handler) -> {
-            inventoriesTag.put(cardName, handler.serializeNBT());
+        sharedInventories.forEach((cardName, inventory) -> {
+            CompoundTag cardTag = new CompoundTag();
+            ListTag itemsTag = new ListTag();
+
+            // 保存物品数据
+            for (int i = 0; i < inventory.size(); i++) {
+                ItemStack stack = inventory.get(i);
+                if (!stack.isEmpty()) {
+                    CompoundTag itemTag = new CompoundTag();
+                    itemTag.putInt("Slot", i);
+                    stack.save(itemTag);
+                    itemsTag.add(itemTag);
+                }
+            }
+
+            cardTag.put("Items", itemsTag);
+            inventoriesTag.put(cardName, cardTag);
         });
         tag.put("SharedInventories", inventoriesTag);
         return tag;
@@ -72,20 +84,20 @@ public class GlobalCardStorage extends SavedData {
                 .filter(CardConfig.CardEntry::isEnabled)
                 .forEach(entry -> {
                     sharedInventories.computeIfAbsent(entry.getName(),
-                            k -> new ItemStackHandler(entry.getInventorySize())
+                            k -> NonNullList.withSize(entry.getInventorySize(), ItemStack.EMPTY)
                     );
                 });
         setDirty();
     }
 
-    public ItemStackHandler getInventory(String cardName) {
-        return sharedInventories.get(cardName);
+    public NonNullList<ItemStack> getInventory(String cardName) {
+        return sharedInventories.getOrDefault(cardName, NonNullList.withSize(DEFAULT_SLOT_SIZE, ItemStack.EMPTY));
     }
 
-    public void updateInventory(String cardName, ItemStackHandler handler) {
-        ItemStackHandler oldHandler = sharedInventories.get(cardName);
-        if (oldHandler == null || !oldHandler.equals(handler)) {
-            sharedInventories.put(cardName, handler);
+    public void updateInventory(String cardName, NonNullList<ItemStack> inventory) {
+        NonNullList<ItemStack> oldInventory = sharedInventories.get(cardName);
+        if (oldInventory == null || !oldInventory.equals(inventory)) {
+            sharedInventories.put(cardName, inventory);
             setDirty();
         }
     }

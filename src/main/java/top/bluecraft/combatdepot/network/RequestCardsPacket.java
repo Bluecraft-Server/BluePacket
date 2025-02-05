@@ -37,7 +37,7 @@ public class RequestCardsPacket {
                 CardConfig config = CardConfig.load();
 
                 System.out.println("发送请求");
-                config.loadFromGlobalStorage(player, storage);
+                config.loadFromGlobalStorage(storage);
                 List<GunViewMenu.Card> cards = menu.getCards();
 
                 for (GunViewMenu.Card card : menu.getCards()) {

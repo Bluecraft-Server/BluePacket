@@ -208,7 +208,7 @@ public class CardConfig {
         }
     }
 
-    public void loadFromGlobalStorage(ServerPlayer player, GlobalCardStorage storage) {
+    public void loadFromGlobalStorage(GlobalCardStorage storage) {
         for (CardEntry entry : entries) {
             if (entry.isEnabled()) {
                 // 从全局存储获取该卡片的物品栏

@@ -65,8 +65,21 @@ public class GunViewMenu extends AbstractContainerMenu {
         CardConfig config = CardConfig.load();
         this.cards = config.createCards();
 
-        if (world.isClientSide) {
-            CombatDepot.PACKET_HANDLER.sendToServer(new RequestCardsPacket());
+        if (player.getServer() != null) {
+            GlobalCardStorage storage = GlobalCardStorage.get(player.getServer().overworld());
+            System.out.println("发送请求");
+            config.loadFromGlobalStorage(storage);
+
+            for (GunViewMenu.Card card : cards) {
+                NonNullList<ItemStack> savedInventory = storage.getInventory(card.getName());
+                if (savedInventory != null) {
+                    // 将全局存储的数据复制到卡片库存
+                    NonNullList<ItemStack> inventory = card.getInventory();
+                    for (int i = 0; i < Math.min(savedInventory.size(), inventory.size()); i++) {
+                        inventory.set(i, savedInventory.get(i).copy());
+                    }
+                }
+            }
         }
         if (!cards.isEmpty()){
             selectCard(0);
@@ -152,21 +165,28 @@ public class GunViewMenu extends AbstractContainerMenu {
         Card card = cards.get(selectedCardIndex);
         int startIndex = currentPage * SLOT_SIZE;
 
-        // 调试日志
-        CombatDepot.LOGGER.debug("刷新页面: {}，起始索引: {}", currentPage, startIndex);
-        CombatDepot.LOGGER.debug("卡片: {}，库存大小: {}", card.getName(), card.getInventory().size());
+        // 清空当前显示
+        for (int i = 0; i < SLOT_SIZE; i++) {
+            displayHandler.setStackInSlot(i, ItemStack.EMPTY);
+        }
 
-        // 从Card的inventory加载到displayHandler
+        // 从 Card 的 inventory 加载到 displayHandler
         for (int i = 0; i < SLOT_SIZE; i++) {
             int actualIndex = startIndex + i;
             if (actualIndex < card.getInventory().size()) {
-                displayHandler.setStackInSlot(i, card.getInventory().get(actualIndex).copy());
-            } else {
-                displayHandler.setStackInSlot(i, ItemStack.EMPTY);
+                ItemStack stack = card.getInventory().get(actualIndex);
+                if (!stack.isEmpty()) {
+                    displayHandler.setStackInSlot(i, stack.copy());
+                    CombatDepot.LOGGER.debug("Card {} inventory at slot {}: {}",
+                            card.getName(),
+                            actualIndex,
+                            stack.isEmpty() ? "empty" : stack.getItem().getDefaultInstance().getDisplayName()
+                    );
+                }
             }
         }
 
-        // 通知客户端同步
+        // 强制同步
         broadcastChanges();
     }
 
@@ -208,10 +228,10 @@ public class GunViewMenu extends AbstractContainerMenu {
     }
 
     @Override
-    public ItemStack quickMoveStack(Player playerIn, int index) {
+    public @NotNull ItemStack quickMoveStack(@NotNull Player playerIn, int index) {
         ItemStack itemstack = ItemStack.EMPTY;
-        Slot slot = (Slot) this.slots.get(index);
-        if (slot != null && slot.hasItem()) {
+        Slot slot = this.slots.get(index);
+        if (slot.hasItem()) {
             ItemStack itemstack1 = slot.getItem();
             itemstack = itemstack1.copy();
             if (index < 110) {
@@ -501,10 +521,30 @@ public class GunViewMenu extends AbstractContainerMenu {
     }
     private static class DynamicSlot extends SlotItemHandler {
         private final GunViewMenu menu;
+        private boolean hasBeenTaken = false;
 
         public DynamicSlot(ItemStackHandler handler, int index, int x, int y, GunViewMenu menu) {
             super(handler, index, x, y);
             this.menu = menu;
+        }
+
+        @Override
+        public boolean mayPickup(Player playerIn) {
+            // 检查是否已经被取出过
+            if (hasBeenTaken) {
+                // 如果已经被取出过，则只允许创造模式或OP权限的玩家取出
+                return playerIn.isCreative() || playerIn.hasPermissions(2);
+            }
+            // 如果还没有被取出过，任何人都可以取出
+            return true;
+        }
+
+        @Override
+        public void onTake(@NotNull Player pPlayer, @NotNull ItemStack pStack) {
+            super.onTake(pPlayer, pStack);
+            // 标记这个槽位已经被取出过
+            hasBeenTaken = true;
+            menu.markSlotTaken(this.getSlotIndex());
         }
 
         @Override
@@ -524,9 +564,22 @@ public class GunViewMenu extends AbstractContainerMenu {
                 }
             }
 
+            int actualIndex = menu.getCurrentPage() * SLOT_SIZE + getSlotIndex();
+
             if (menu.getWorld().isClientSide()) { // 仅在客户端触发
                 if (currentCard != null) {
-                    int actualIndex = menu.getCurrentPage() * SLOT_SIZE + getSlotIndex();
+                    CombatDepot.PACKET_HANDLER.sendToServer(
+                            new UpdateSlotMessage(
+                                    currentCard.getName(),
+                                    actualIndex,
+                                    stack.copy()
+                            )
+                    );
+                }
+            }
+
+            if (menu.getWorld().isClientSide()) {
+                if (currentCard != null) {
                     CombatDepot.PACKET_HANDLER.sendToServer(
                             new UpdateSlotMessage(
                                     currentCard.getName(),

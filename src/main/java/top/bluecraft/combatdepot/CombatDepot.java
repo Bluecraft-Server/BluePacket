@@ -60,6 +60,7 @@ public class CombatDepot {
         // 添加本地化系统的初始化
         MinecraftForge.EVENT_BUS.register(CardLanguageManager.class);
         bus.addListener(this::commonSetup);
+        bus.addListener(this::clientSetup);
         ItemRegistration.REGISTRATION.register(bus);
         MenuRegistration.REGISTRATION.register(bus);
         CREATIVE_MODE_TABS.register(bus);
@@ -68,17 +69,22 @@ public class CombatDepot {
         bus.addListener(CombatDepot::onGatherData);
     }
 
+    private void clientSetup(FMLClientSetupEvent event) {
+        LOGGER.info("HELLO FROM CLIENT SETUP");
+        event.enqueueWork(() -> {
+        });
+    }
+
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("HELLO FROM COMMON SETUP");
-        LOGGER.info("DIRT BLOCK >> {}", ForgeRegistries.BLOCKS.getKey(Blocks.DIRT));
         event.enqueueWork(
                 () -> {
-                    CardTextureLoader.initializeTextureDirectory();
-                    AutoCardConfig.updateConfigWithNewTextures();
+                    CombatDepot.addNetworkMessage(AddItemToCardMessage.class, AddItemToCardMessage::encode, AddItemToCardMessage::decode, AddItemToCardMessage::handle);
                     CombatDepot.addNetworkMessage(RequestCardsPacket.class, RequestCardsPacket::encode, RequestCardsPacket::decode, RequestCardsPacket::handle);
                     CombatDepot.addNetworkMessage(SyncCardsPacket.class, SyncCardsPacket::encode, SyncCardsPacket::decode, SyncCardsPacket::handle);
                     CombatDepot.addNetworkMessage(UpdateSlotMessage.class, UpdateSlotMessage::encode, UpdateSlotMessage::decode, UpdateSlotMessage::handle);
-                    CombatDepot.addNetworkMessage(AddItemToCardMessage.class, AddItemToCardMessage::encode, AddItemToCardMessage::decode, AddItemToCardMessage::handle);
+                    CardTextureLoader.initializeTextureDirectory();
+                    AutoCardConfig.updateConfigWithNewTextures();
                 }
         );
     }

@@ -18,7 +18,6 @@ import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.config.CardConfig;
 import top.bluecraft.combatdepot.init.MenuRegistration;
-import top.bluecraft.combatdepot.network.RequestCardsPacket;
 import top.bluecraft.combatdepot.network.SyncCardsPacket;
 import top.bluecraft.combatdepot.network.UpdateSlotMessage;
 
@@ -526,6 +525,11 @@ public class GunViewMenu extends AbstractContainerMenu {
         public DynamicSlot(ItemStackHandler handler, int index, int x, int y, GunViewMenu menu) {
             super(handler, index, x, y);
             this.menu = menu;
+        }
+
+        @Override
+        public boolean mayPlace(@NotNull ItemStack stack) {
+            return false;
         }
 
         @Override

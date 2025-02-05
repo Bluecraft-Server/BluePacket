@@ -40,23 +40,23 @@ public class AddItemToCardMessage {
         );
     }
 
-    @OnlyIn(Dist.CLIENT)
-    public void handle(Supplier<NetworkEvent.Context> context) {
-        context.get().enqueueWork(() -> {
+    public static void handle(AddItemToCardMessage message, Supplier<NetworkEvent.Context> context) {
+        NetworkEvent.Context ctx = context.get();
+        ctx.enqueueWork(() -> {
             ServerPlayer player = context.get().getSender();
             if (player != null && player.containerMenu instanceof GunViewMenu menu) {
                 // 更新Card的实际inventory
                 GunViewMenu.Card selectedCard = menu.getCards().stream()
-                        .filter(c -> c.getName().equals(cardName))
+                        .filter(c -> c.getName().equals(message.cardName))
                         .findFirst()
                         .orElse(null);
 
                 if (selectedCard != null) {
-                    selectedCard.getInventory().set(slot, stack);
+                    selectedCard.getInventory().set(message.slot, message.stack);
 
                     // 保存到GlobalCardStorage
                     GlobalCardStorage storage = GlobalCardStorage.get(player.serverLevel());
-                    storage.updateInventory(cardName, selectedCard.getInventory());
+                    storage.updateInventory(message.cardName, selectedCard.getInventory());
                     storage.setDirty();
                 }
 
@@ -64,6 +64,6 @@ public class AddItemToCardMessage {
                 menu.syncDisplayInventory();
             }
         });
-        context.get().setPacketHandled(true);
+        ctx.setPacketHandled(true);
     }
 }

@@ -12,6 +12,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
 import top.bluecraft.combatdepot.CombatDepot;
+import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 import top.bluecraft.combatdepot.config.CardConfig;
@@ -19,7 +20,7 @@ import top.bluecraft.combatdepot.config.CardConfig;
 import java.util.List;
 import java.util.function.Supplier;
 
-public record SyncCardsPacket(List<GunViewMenu.Card> cards, int cardOffset) {
+public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
     public static void encode(SyncCardsPacket msg, FriendlyByteBuf buf) {
         // 写入卡片列表
         buf.writeCollection(msg.cards(), (buffer, card) -> {
@@ -52,7 +53,7 @@ public record SyncCardsPacket(List<GunViewMenu.Card> cards, int cardOffset) {
 
     public static SyncCardsPacket decode(FriendlyByteBuf buf) {
         // 读取卡片列表
-        List<GunViewMenu.Card> cards = buf.readList(buffer -> {
+        List<ICard> cards = buf.readList(buffer -> {
             // 读取卡片名称
             String name = buffer.readUtf();
             // 读取库存大小

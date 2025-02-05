@@ -4,24 +4,27 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.SlotItemHandler;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.CombatDepot;
+import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.config.CardConfig;
 import top.bluecraft.combatdepot.init.MenuRegistration;
 import top.bluecraft.combatdepot.network.SyncCardsPacket;
 import top.bluecraft.combatdepot.network.UpdateSlotMessage;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
 
 public class GunViewMenu extends AbstractContainerMenu {
     // Region: Constants
@@ -41,7 +44,7 @@ public class GunViewMenu extends AbstractContainerMenu {
     private final Player player;
     private final Level world;
     private final int x, y, z;
-    private List<Card> cards;
+    private List<ICard> cards;
     private int selectedCardIndex = -1;
     private int currentPage = 0;
     private int cardOffset = 0;
@@ -69,7 +72,7 @@ public class GunViewMenu extends AbstractContainerMenu {
             System.out.println("发送请求");
             config.loadFromGlobalStorage(storage);
 
-            for (GunViewMenu.Card card : cards) {
+            for (ICard card : cards) {
                 NonNullList<ItemStack> savedInventory = storage.getInventory(card.getName());
                 if (savedInventory != null) {
                     // 将全局存储的数据复制到卡片库存
@@ -147,7 +150,7 @@ public class GunViewMenu extends AbstractContainerMenu {
     public void setPage(int page) {
         if (selectedCardIndex == -1) return;
 
-        Card card = cards.get(selectedCardIndex);
+        ICard card = cards.get(selectedCardIndex);
         int totalPages = card.getTotalPages();
         if (page >= 0 && page < totalPages) {
             this.currentPage = page;
@@ -161,7 +164,7 @@ public class GunViewMenu extends AbstractContainerMenu {
     private void refreshDisplayInventory() {
         if (selectedCardIndex == -1) return;
 
-        Card card = cards.get(selectedCardIndex);
+        ICard card = cards.get(selectedCardIndex);
         int startIndex = currentPage * SLOT_SIZE;
 
         // 清空当前显示
@@ -396,12 +399,12 @@ public class GunViewMenu extends AbstractContainerMenu {
         broadcastChanges(); // 通知客户端更新
     }
 
-    public void setCards(List<Card> cards) {
+    public void setCards(List<ICard> cards) {
         this.cards = cards;
     }
 
     // Region: Getters
-    public List<Card> getCards() {
+    public List<ICard> getCards() {
         return cards;
     }
 
@@ -441,7 +444,7 @@ public class GunViewMenu extends AbstractContainerMenu {
         return takenSlots;
     }
 
-    public Card getCurrentCard() {
+    public ICard getCurrentCard() {
         if (selectedCardIndex >= 0 && selectedCardIndex < cards.size()) {
             return cards.get(selectedCardIndex);
         }
@@ -470,7 +473,7 @@ public class GunViewMenu extends AbstractContainerMenu {
         return cardOffset;
     }
 
-    public static class Card {
+    public static class Card implements ICard {
         private final String name;
         private NonNullList<ItemStack> inventory;
         private final int slotsPerPage;
@@ -555,7 +558,7 @@ public class GunViewMenu extends AbstractContainerMenu {
         public void set(@NotNull ItemStack stack) {
             super.set(stack);
 
-            Card currentCard = menu.getCurrentCard();
+            ICard currentCard = menu.getCurrentCard();
             if (currentCard != null) {
                 int actualIndex = menu.getCurrentPage() * SLOT_SIZE + getSlotIndex();
                 NonNullList<ItemStack> inventory = currentCard.getInventory();

@@ -39,7 +39,7 @@ public class CardConfigScreen extends Screen {
     protected void init() {
         super.init();
 
-        List<GunViewMenu.Card> cards = parentScreen.getMenu().getCards();
+        List<ICard> cards = parentScreen.getMenu().getCards();
         int totalRows = (int) Math.ceil((double) cards.size() / BUTTONS_PER_ROW);
         maxScroll = Math.max(0, totalRows - VISIBLE_ROWS);
 
@@ -86,7 +86,7 @@ public class CardConfigScreen extends Screen {
     private void updateButtons() {
         clearButtons();
 
-        List<GunViewMenu.Card> cards = parentScreen.getMenu().getCards();
+        List<ICard> cards = parentScreen.getMenu().getCards();
         int startX = (width - (BUTTON_WIDTH * BUTTONS_PER_ROW + BUTTON_SPACING)) / 2;
 
         // 只添加可见范围内的按钮
@@ -94,7 +94,7 @@ public class CardConfigScreen extends Screen {
              i < Math.min(cards.size(), (currentScroll + VISIBLE_ROWS) * BUTTONS_PER_ROW);
              i++) {
 
-            GunViewMenu.Card card = cards.get(i);
+            ICard card = cards.get(i);
             int localRow = (i / BUTTONS_PER_ROW) - currentScroll;
             int col = i % BUTTONS_PER_ROW;
 

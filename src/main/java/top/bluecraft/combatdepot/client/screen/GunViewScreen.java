@@ -12,6 +12,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.CombatDepot;
+import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.client.CardRenderer;
 import top.bluecraft.combatdepot.client.Colors;
 import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
@@ -40,8 +41,8 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	private static final ResourceLocation TEXTURE = new ResourceLocation(CombatDepot.MODID, "textures/gui/gun_view.png");
 
 	// Region: Fields
-	private final List<GunViewMenu.Card> cards = new ArrayList<>();
-	private GunViewMenu.Card currentCard;
+	private final List<ICard> cards = new ArrayList<>();
+	private ICard currentCard;
 	private int currentPageIndex = 0;
 	private int currentCardOffset = 0;
 	private Button leftArrowButton;
@@ -56,7 +57,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		this.currentCard = !cards.isEmpty() ? cards.get(0) : null;
 	}
 
-	public void updateCards(List<GunViewMenu.Card> newCards) {
+	public void updateCards(List<ICard> newCards) {
 		this.cards.clear();
 		this.cards.addAll(newCards);
 
@@ -136,7 +137,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 
 		for (int i = 0; i < Math.min(VISIBLE_CARDS, cards.size() - currentCardOffset); i++) {
 			int cardIndex = i + currentCardOffset;
-			GunViewMenu.Card card = cards.get(cardIndex);
+			ICard card = cards.get(cardIndex);
 			int cardX = startX + i * (CARD_WIDTH + CARD_SPACING);
 
 			boolean isSelected = cardIndex == menu.getSelectedCardIndex();
@@ -193,7 +194,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 		return index == menu.getSelectedCardIndex();
 	}
 
-	private void renderCardTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY, GunViewMenu.Card card) {
+	private void renderCardTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY, ICard card) {
 		guiGraphics.renderTooltip(font,
 				Component.translatable("tooltip." + CombatDepot.MODID + "." + card.getName()),
 				mouseX, mouseY);

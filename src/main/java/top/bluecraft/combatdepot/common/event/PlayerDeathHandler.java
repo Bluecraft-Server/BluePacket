@@ -6,6 +6,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
+
 import java.util.BitSet;
 
 @Mod.EventBusSubscriber(modid = CombatDepot.MODID)

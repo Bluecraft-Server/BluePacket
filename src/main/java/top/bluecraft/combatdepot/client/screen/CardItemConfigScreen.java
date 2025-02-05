@@ -6,22 +6,16 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.NonNullList;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
-import top.bluecraft.combatdepot.api.ICardInventory;
-import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 import top.bluecraft.combatdepot.network.AddItemToCardMessage;
 import top.bluecraft.combatdepot.network.SyncCardsPacket;
@@ -33,7 +27,7 @@ import java.util.List;
 @OnlyIn(Dist.CLIENT)
 public class CardItemConfigScreen extends Screen {
     private final CardEditScreen parentScreen;
-    private final GunViewMenu.Card card;
+    private final ICard card;
     private EditBox itemInput;
     private EditBox countInput;
     private EditBox deleteSlotInput;  // 新增：用于输入要删除的槽位索引
@@ -46,7 +40,7 @@ public class CardItemConfigScreen extends Screen {
     private static final int SLOT_SIZE = 18;
     private static final int SLOT_SPACING = 2;
 
-    public CardItemConfigScreen(CardEditScreen parentScreen, GunViewMenu.Card card) {
+    public CardItemConfigScreen(CardEditScreen parentScreen, ICard card) {
         super(Component.translatable("gui." + CombatDepot.MODID + ".card.item.config"));
         this.parentScreen = parentScreen;
         this.card = card;
@@ -323,7 +317,7 @@ public class CardItemConfigScreen extends Screen {
                 this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
 
             // 1. 获取当前选中的卡片
-            GunViewMenu.Card currentCard = menu.getCurrentCard();
+            ICard currentCard = menu.getCurrentCard();
             if (currentCard == null) return;
 
             // 5. 同步到客户端（如果需要）

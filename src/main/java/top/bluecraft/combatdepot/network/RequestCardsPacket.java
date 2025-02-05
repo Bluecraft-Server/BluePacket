@@ -7,6 +7,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
 import top.bluecraft.combatdepot.CombatDepot;
+import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 import top.bluecraft.combatdepot.config.CardConfig;
@@ -38,9 +39,9 @@ public class RequestCardsPacket {
 
                 System.out.println("发送请求");
                 config.loadFromGlobalStorage(storage);
-                List<GunViewMenu.Card> cards = menu.getCards();
+                List<ICard> cards = menu.getCards();
 
-                for (GunViewMenu.Card card : menu.getCards()) {
+                for (ICard card : menu.getCards()) {
                     NonNullList<ItemStack> savedInventory = storage.getInventory(card.getName());
                     if (savedInventory != null) {
                         // 将全局存储的数据复制到卡片库存

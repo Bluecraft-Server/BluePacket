@@ -4,6 +4,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
+import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
 import java.util.function.Supplier;
@@ -28,7 +29,7 @@ public record UpdateSlotMessage(String cardName, int slotIndex, ItemStack stack)
         context.enqueueWork(() -> {
             ServerPlayer player = context.getSender();
             if (player != null && player.containerMenu instanceof GunViewMenu menu) {
-                GunViewMenu.Card card = menu.getCards().stream()
+                ICard card = menu.getCards().stream()
                         .filter(c -> c.getName().equals(msg.cardName()))
                         .findFirst()
                         .orElse(null);

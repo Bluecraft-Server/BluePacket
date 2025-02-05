@@ -19,13 +19,14 @@ import java.util.List;
 @OnlyIn(Dist.CLIENT)
 public class CardEditScreen extends Screen {
     private final CardConfigScreen parentScreen;
-    private final GunViewMenu.Card card;
+    private final ICard card;
     private EditBox itemInput;
     private int currentPage = 0;
-    private static final int ITEMS_PER_PAGE = 27; // 每页显示27个物品
+    private static final int ITEMS_PER_PAGE = 27;
 
-        public CardEditScreen(CardConfigScreen parentScreen, GunViewMenu.Card card) {
-        super(Component.translatable("gui." + CombatDepot.MODID + ".card.edit", Component.translatable("gui." + CombatDepot.MODID + "." + card.getName())));
+    public CardEditScreen(CardConfigScreen parentScreen, ICard card) {
+        super(Component.translatable("gui." + CombatDepot.MODID + ".card.edit",
+                Component.translatable("gui." + CombatDepot.MODID + "." + card.getName())));
         this.parentScreen = parentScreen;
         this.card = card;
     }
@@ -34,7 +35,38 @@ public class CardEditScreen extends Screen {
     protected void init() {
         super.init();
 
-        // 添加打开配置界面的按钮
+        // 添加页面导航按钮
+        Button prevButton = Button.builder(
+                        Component.literal("<"),
+                        button -> {
+                            if (currentPage > 0) {
+                                currentPage--;
+                            }
+                        })
+                .pos(width / 2 - 100, height / 2 - 10)
+                .size(20, 20)
+                .build();
+
+        Button nextButton = Button.builder(
+                        Component.literal(">"),
+                        button -> {
+                            if (parentScreen.getMinecraft().player != null &&
+                                    parentScreen.getMinecraft().player.containerMenu instanceof GunViewMenu menu) {
+                                int totalItems = menu.getCurrentCard().getInventory().size();
+                                int totalPages = (int) Math.ceil((double) totalItems / ITEMS_PER_PAGE);
+                                if (currentPage < totalPages - 1) {
+                                    currentPage++;
+                                }
+                            }
+                        })
+                .pos(width / 2 + 80, height / 2 - 10)
+                .size(20, 20)
+                .build();
+
+        addRenderableWidget(prevButton);
+        addRenderableWidget(nextButton);
+
+        // 原有的按钮
         addRenderableWidget(Button.builder(
                         Component.translatable("gui." + CombatDepot.MODID + ".card.edit.config"),
                         button -> {
@@ -63,30 +95,22 @@ public class CardEditScreen extends Screen {
         this.renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTicks);
 
-        // 渲染标题
         graphics.drawCenteredString(font, title, width / 2, 20, 0xFFFFFF);
 
-        // 渲染页面信息
-        Component pageInfo = Component.translatable("gui." + CombatDepot.MODID + ".page", currentPage + 1, card.getTotalPages());
+        Component pageInfo = Component.translatable("gui." + CombatDepot.MODID + ".page",
+                currentPage + 1, card.getTotalPages());
         graphics.drawCenteredString(font, pageInfo, width / 2, height / 2 - 10, 0xFFFFFF);
 
-        // 渲染当前页面的物品
         renderCardPage(graphics);
     }
 
     private void renderCardPage(GuiGraphics graphics) {
-        if (parentScreen.getMinecraft().player != null && parentScreen.getMinecraft().player.containerMenu instanceof GunViewMenu menu) {
-
+        if (parentScreen.getMinecraft().player != null &&
+                parentScreen.getMinecraft().player.containerMenu instanceof GunViewMenu menu) {
             List<ItemStack> allItems = new ArrayList<>(menu.getCurrentCard().getInventory());
 
-            // 计算总页数
-            int totalPages = (int) Math.ceil((double) allItems.size() / ITEMS_PER_PAGE);
-
-            // 计算当前页的起始和结束索引
             int startIndex = currentPage * ITEMS_PER_PAGE;
             int endIndex = Math.min(startIndex + ITEMS_PER_PAGE, allItems.size());
-
-            // 获取当前页要显示的物品
             List<ItemStack> pageItems = allItems.subList(startIndex, endIndex);
 
             int startX = width / 2 - 90;
@@ -94,7 +118,6 @@ public class CardEditScreen extends Screen {
             int itemSize = 16;
             int spacing = 20;
 
-            // 渲染当前页的物品（3行9列）
             for (int i = 0; i < pageItems.size(); i++) {
                 int row = i / 9;
                 int col = i % 9;

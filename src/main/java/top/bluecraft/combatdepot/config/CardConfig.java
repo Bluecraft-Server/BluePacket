@@ -4,14 +4,16 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.loading.FMLPaths;
 import top.bluecraft.combatdepot.CombatDepot;
+import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
-import java.io.*;
+import java.io.File;
+import java.io.Reader;
+import java.io.Writer;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -159,8 +161,8 @@ public class CardConfig {
         return entry;
     }
 
-    public List<GunViewMenu.Card> createCards() {
-        List<GunViewMenu.Card> cards = new ArrayList<>();
+    public List<ICard> createCards() {
+        List<ICard> cards = new ArrayList<>();
         for (CardEntry entry : entries) {
             if (entry.isEnabled()) {
                 NonNullList<ItemStack> inventory = entry.getInventory();

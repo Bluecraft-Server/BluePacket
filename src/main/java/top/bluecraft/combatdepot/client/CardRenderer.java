@@ -9,6 +9,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import top.bluecraft.combatdepot.CombatDepot;
+import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
 public class CardRenderer {
@@ -18,7 +19,7 @@ public class CardRenderer {
     private static final int ARROW_SPACING = 15;
     public static final ResourceLocation BG_RESOURCE = new ResourceLocation(CombatDepot.MODID, "textures/gui/general.png");
 
-    public static void render(GunViewMenu.Card card, GuiGraphics graphics, Minecraft minecraft, int x, int y, int width, int height, boolean isSelected) {
+    public static void render(ICard card, GuiGraphics graphics, Minecraft minecraft, int x, int y, int width, int height, boolean isSelected) {
         if (minecraft == null) return;
 
         try {
@@ -40,7 +41,7 @@ public class CardRenderer {
         }
     }
 
-    public static void renderPageInfo(GunViewMenu.Card card, GunViewMenu menu, GuiGraphics graphics, Font font, int centerX, int y) {
+    public static void renderPageInfo(ICard card, GunViewMenu menu, GuiGraphics graphics, Font font, int centerX, int y) {
         // 渲染页码
         Component pageInfo = Component.translatable("gui." + CombatDepot.MODID + ".page", menu.getCurrentPage() + 1, card.getTotalPages());
         graphics.drawCenteredString(font, pageInfo, centerX, y, PAGE_INFO_COLOR);
@@ -50,7 +51,7 @@ public class CardRenderer {
 
     }
 
-    public static void addPageButtons(GunViewMenu menu, GunViewMenu.Card card, Screen screen, int centerX, int y) {
+    public static void addPageButtons(GunViewMenu menu, ICard card, Screen screen, int centerX, int y) {
         // 箭头按钮的Y坐标
         int arrowY = y + 20;
 

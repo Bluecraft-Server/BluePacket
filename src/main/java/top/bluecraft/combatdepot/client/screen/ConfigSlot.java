@@ -6,14 +6,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.SlotItemHandler;
 import org.jetbrains.annotations.NotNull;
-import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
+import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 
 public class ConfigSlot extends SlotItemHandler {
     private final int x, y;
     private ItemStack stack = ItemStack.EMPTY;
     private final Font font;
 
-    public ConfigSlot(int x, int y, int index, Font font, GunViewMenu menu) {
+    public ConfigSlot(int x, int y, int index, Font font, CombatDepotMenu menu) {
         super(new ItemStackHandler(1), index, x, y);
         this.x = x;
         this.y = y;

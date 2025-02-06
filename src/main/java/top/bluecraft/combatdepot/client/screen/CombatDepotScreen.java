@@ -15,14 +15,13 @@ import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.client.CardRenderer;
 import top.bluecraft.combatdepot.client.Colors;
-import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
+import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @OnlyIn(Dist.CLIENT)
-public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
-	// Region: Constants
+public class CombatDepotScreen extends AbstractContainerScreen<CombatDepotMenu> {
 	public static final int IMAGE_WIDTH = 400;
 	public static final int IMAGE_HEIGHT = 200;
 	private static final int CARD_WIDTH = 32;
@@ -40,7 +39,6 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 
 	private static final ResourceLocation TEXTURE = new ResourceLocation(CombatDepot.MODID, "textures/gui/gun_view.png");
 
-	// Region: Fields
 	private final List<ICard> cards = new ArrayList<>();
 	private ICard currentCard;
 	private int currentPageIndex = 0;
@@ -48,8 +46,7 @@ public class GunViewScreen extends AbstractContainerScreen<GunViewMenu> {
 	private Button leftArrowButton;
 	private Button rightArrowButton;
 
-	// Region: Constructor
-	public GunViewScreen(GunViewMenu container, Inventory inventory, Component text) {
+	public CombatDepotScreen(CombatDepotMenu container, Inventory inventory, Component text) {
 		super(container, inventory, text);
 		this.imageWidth = IMAGE_WIDTH;
 		this.imageHeight = IMAGE_HEIGHT;

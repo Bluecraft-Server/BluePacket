@@ -5,7 +5,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import top.bluecraft.combatdepot.client.screen.GunViewScreen;
+import top.bluecraft.combatdepot.client.screen.CombatDepotScreen;
 import top.bluecraft.combatdepot.init.MenuRegistration;
 
 
@@ -15,7 +15,7 @@ public class ClientModEvents {
         @SubscribeEvent
         public static void clientLoad(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {
-                MenuScreens.register(MenuRegistration.GUN_VIEW_MENU.get(), GunViewScreen::new);
+                MenuScreens.register(MenuRegistration.GUN_VIEW_MENU.get(), CombatDepotScreen::new);
             });
         }
 }

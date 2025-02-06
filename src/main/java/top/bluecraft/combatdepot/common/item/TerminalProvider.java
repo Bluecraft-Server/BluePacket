@@ -5,15 +5,12 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
-import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
+import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 
 public class TerminalProvider implements MenuProvider {
-    private final ItemStack stack;
 
-    public TerminalProvider(ItemStack stack) {
-        this.stack = stack;
+    public TerminalProvider() {
     }
 
     @Override
@@ -23,6 +20,6 @@ public class TerminalProvider implements MenuProvider {
 
     @Override
     public AbstractContainerMenu createMenu(int id, @NotNull Inventory inventory, @NotNull Player player) {
-        return new GunViewMenu(id, inventory);
+        return new CombatDepotMenu(id, inventory);
     }
 }

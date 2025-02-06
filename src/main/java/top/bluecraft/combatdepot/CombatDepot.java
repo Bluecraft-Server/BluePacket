@@ -32,7 +32,6 @@ import top.bluecraft.combatdepot.init.ItemRegistration;
 import top.bluecraft.combatdepot.init.MenuRegistration;
 import top.bluecraft.combatdepot.lang.CardLanguageManager;
 import top.bluecraft.combatdepot.network.AddItemToCardMessage;
-import top.bluecraft.combatdepot.network.RequestCardsPacket;
 import top.bluecraft.combatdepot.network.SyncCardsPacket;
 import top.bluecraft.combatdepot.network.UpdateSlotMessage;
 
@@ -82,7 +81,6 @@ public class CombatDepot {
         event.enqueueWork(
                 () -> {
                     CombatDepot.addNetworkMessage(AddItemToCardMessage.class, AddItemToCardMessage::encode, AddItemToCardMessage::decode, AddItemToCardMessage::handle);
-                    CombatDepot.addNetworkMessage(RequestCardsPacket.class, RequestCardsPacket::encode, RequestCardsPacket::decode, RequestCardsPacket::handle);
                     CombatDepot.addNetworkMessage(SyncCardsPacket.class, SyncCardsPacket::encode, SyncCardsPacket::decode, SyncCardsPacket::handle);
                     CombatDepot.addNetworkMessage(UpdateSlotMessage.class, UpdateSlotMessage::encode, UpdateSlotMessage::decode, UpdateSlotMessage::handle);
                     CardTextureLoader.initializeTextureDirectory();

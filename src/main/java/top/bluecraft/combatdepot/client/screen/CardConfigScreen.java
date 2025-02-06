@@ -10,14 +10,13 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
-import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @OnlyIn(Dist.CLIENT)
 public class CardConfigScreen extends Screen {
-    private final GunViewScreen parentScreen;
+    private final CombatDepotScreen parentScreen;
     private static final int BUTTONS_PER_ROW = 2;
     private static final int BUTTON_WIDTH = 100;
     private static final int BUTTON_HEIGHT = 20;
@@ -30,7 +29,7 @@ public class CardConfigScreen extends Screen {
     private Button scrollUpButton;
     private Button scrollDownButton;
 
-    public CardConfigScreen(GunViewScreen parentScreen) {
+    public CardConfigScreen(CombatDepotScreen parentScreen) {
         super(Component.translatable("gui." + CombatDepot.MODID + ".card.config"));
         this.parentScreen = parentScreen;
     }
@@ -181,7 +180,7 @@ public class CardConfigScreen extends Screen {
                 minecraft.player.hasPermissions(2);
     }
 
-    public GunViewScreen getParentScreen() {
+    public CombatDepotScreen getParentScreen() {
         return parentScreen;
     }
 }

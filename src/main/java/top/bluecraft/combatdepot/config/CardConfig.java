@@ -9,7 +9,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
-import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
+import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 
 import java.io.File;
 import java.io.Reader;
@@ -169,7 +169,7 @@ public class CardConfig {
                 if (inventory == null) {
                     inventory = NonNullList.withSize(entry.getInventorySize(), ItemStack.EMPTY);
                 }
-                cards.add(new GunViewMenu.Card(entry, inventory));
+                cards.add(new CombatDepotMenu.Card(entry, inventory));
             }
         }
         return cards;

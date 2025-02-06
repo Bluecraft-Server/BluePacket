@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
-public class GunViewMenu extends AbstractContainerMenu {
+public class CombatDepotMenu extends AbstractContainerMenu {
     // Region: Constants
     private static final int GRID_ROWS = 10;
     private static final int GRID_COLS = 11;
@@ -53,7 +53,7 @@ public class GunViewMenu extends AbstractContainerMenu {
     private final ItemStackHandler displayHandler = new ItemStackHandler(SLOT_SIZE);
     private final BitSet takenSlots = new BitSet(SLOT_SIZE);
 
-    public GunViewMenu(int id, Inventory playerInventory) {
+    public CombatDepotMenu(int id, Inventory playerInventory) {
         super(MenuRegistration.GUN_VIEW_MENU.get(), id);
         this.player = playerInventory.player;
         this.world = player.level();
@@ -106,7 +106,7 @@ public class GunViewMenu extends AbstractContainerMenu {
         }
     }
 
-    // 在 GunViewMenu 类中添加以下方法
+    // 在 CombatDepotMenu 类中添加以下方法
 
     /**
      * 加载指定页面的物品到显示库存
@@ -522,10 +522,10 @@ public class GunViewMenu extends AbstractContainerMenu {
         }
     }
     private static class DynamicSlot extends SlotItemHandler {
-        private final GunViewMenu menu;
+        private final CombatDepotMenu menu;
         private boolean hasBeenTaken = false;
 
-        public DynamicSlot(ItemStackHandler handler, int index, int x, int y, GunViewMenu menu) {
+        public DynamicSlot(ItemStackHandler handler, int index, int x, int y, CombatDepotMenu menu) {
             super(handler, index, x, y);
             this.menu = menu;
         }

@@ -45,7 +45,7 @@ public class GeneralTerminal extends Item {
         ItemStack itemstack = entity.getItemInHand(hand);
 
         if (!world.isClientSide && entity instanceof ServerPlayer serverPlayer) {
-            serverPlayer.openMenu(new TerminalProvider(itemstack));
+            serverPlayer.openMenu(new TerminalProvider());
             CombatDepot.LOGGER.info("[CombatDepot] Opened server screen");
         }
 

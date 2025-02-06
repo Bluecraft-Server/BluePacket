@@ -11,7 +11,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
-import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
+import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,7 +51,7 @@ public class CardEditScreen extends Screen {
                         Component.literal(">"),
                         button -> {
                             if (parentScreen.getMinecraft().player != null &&
-                                    parentScreen.getMinecraft().player.containerMenu instanceof GunViewMenu menu) {
+                                    parentScreen.getMinecraft().player.containerMenu instanceof CombatDepotMenu menu) {
                                 int totalItems = menu.getCurrentCard().getInventory().size();
                                 int totalPages = (int) Math.ceil((double) totalItems / ITEMS_PER_PAGE);
                                 if (currentPage < totalPages - 1) {
@@ -106,7 +106,7 @@ public class CardEditScreen extends Screen {
 
     private void renderCardPage(GuiGraphics graphics) {
         if (parentScreen.getMinecraft().player != null &&
-                parentScreen.getMinecraft().player.containerMenu instanceof GunViewMenu menu) {
+                parentScreen.getMinecraft().player.containerMenu instanceof CombatDepotMenu menu) {
             List<ItemStack> allItems = new ArrayList<>(menu.getCurrentCard().getInventory());
 
             int startIndex = currentPage * ITEMS_PER_PAGE;

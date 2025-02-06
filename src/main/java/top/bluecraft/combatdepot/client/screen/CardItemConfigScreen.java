@@ -16,7 +16,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
-import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
+import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 import top.bluecraft.combatdepot.network.AddItemToCardMessage;
 import top.bluecraft.combatdepot.network.SyncCardsPacket;
 import top.bluecraft.combatdepot.util.ItemHooks;
@@ -109,7 +109,7 @@ public class CardItemConfigScreen extends Screen {
                             // 发送更新包到服务器
                             if (this.minecraft != null && this.minecraft.player != null &&
                                     this.minecraft.level != null && this.minecraft.level.isClientSide() &&
-                                    this.minecraft.player.getServer() != null && minecraft.player.containerMenu instanceof GunViewMenu menu) {
+                                    this.minecraft.player.getServer() != null && minecraft.player.containerMenu instanceof CombatDepotMenu menu) {
                                 CombatDepot.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
                                         menu.getCards().get(menu.getSelectedCardIndex()).getName(),
                                         slotIndex,
@@ -133,7 +133,7 @@ public class CardItemConfigScreen extends Screen {
                 .size(20, 20)
                 .build());
 
-        if (this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
+        if (this.minecraft.player.containerMenu instanceof CombatDepotMenu menu) {
             this.itemSlot = new ConfigSlot(width / 2 - 100, height / 2 - 40, 0, this.font, menu);
         }
 
@@ -247,7 +247,7 @@ public class CardItemConfigScreen extends Screen {
 
     private void addItemToCard(ItemStack item) {
         NonNullList<ItemStack> inventory = card.getInventory();
-        GunViewMenu menu = parentScreen.getParentScreen().getParentScreen().getMenu();
+        CombatDepotMenu menu = parentScreen.getParentScreen().getParentScreen().getMenu();
 
         // 获取当前页面的起始槽位
         int pageStart = menu.getCurrentPage() * SLOT_SIZE;
@@ -300,7 +300,7 @@ public class CardItemConfigScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    private void sendUpdatePacket(int globalSlot, ItemStack item, GunViewMenu menu) {
+    private void sendUpdatePacket(int globalSlot, ItemStack item, CombatDepotMenu menu) {
         CombatDepot.PACKET_HANDLER.sendToServer(new AddItemToCardMessage(
                 card.getName(),
                 globalSlot, // 使用全局槽位索引
@@ -314,7 +314,7 @@ public class CardItemConfigScreen extends Screen {
     private void updateInventorySerialize() {
         if (this.minecraft != null &&
                 this.minecraft.player != null &&
-                this.minecraft.player.containerMenu instanceof GunViewMenu menu) {
+                this.minecraft.player.containerMenu instanceof CombatDepotMenu menu) {
 
             // 1. 获取当前选中的卡片
             ICard currentCard = menu.getCurrentCard();

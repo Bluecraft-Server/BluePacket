@@ -14,7 +14,7 @@ import net.minecraftforge.network.NetworkEvent;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
-import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
+import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 import top.bluecraft.combatdepot.config.CardConfig;
 
 import java.util.List;
@@ -69,7 +69,7 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
             }
 
             // 创建卡片对象
-            return new GunViewMenu.Card(
+            return new CombatDepotMenu.Card(
                     new CardConfig.CardEntry() {
                         @Override
                         public ResourceLocation getTexture() {
@@ -110,7 +110,7 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
         NetworkEvent.Context context = contextSupplier.get();
         context.enqueueWork(() -> {
             LocalPlayer player = Minecraft.getInstance().player;
-            if (player != null && player.containerMenu instanceof GunViewMenu menu) {
+            if (player != null && player.containerMenu instanceof CombatDepotMenu menu) {
                 // 更新客户端卡片数据
                 menu.setCards(message.cards());
                 // 更新卡片偏移量

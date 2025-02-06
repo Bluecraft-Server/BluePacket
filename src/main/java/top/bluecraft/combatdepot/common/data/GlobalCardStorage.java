@@ -8,7 +8,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.saveddata.SavedData;
 import org.jetbrains.annotations.NotNull;
-import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
+import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -77,7 +77,7 @@ public class GlobalCardStorage extends SavedData {
 
     public NonNullList<ItemStack> getInventory(String cardName) {
         return cardInventories.computeIfAbsent(cardName,
-                k -> NonNullList.withSize(GunViewMenu.getSlotSize(), ItemStack.EMPTY));
+                k -> NonNullList.withSize(CombatDepotMenu.getSlotSize(), ItemStack.EMPTY));
     }
 
     public void updateInventory(String cardName, NonNullList<ItemStack> inventory) {

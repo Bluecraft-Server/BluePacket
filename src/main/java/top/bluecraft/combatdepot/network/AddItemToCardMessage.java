@@ -6,7 +6,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
 import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
-import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
+import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 
 import java.util.function.Supplier;
 
@@ -39,7 +39,7 @@ public class AddItemToCardMessage {
         NetworkEvent.Context ctx = context.get();
         ctx.enqueueWork(() -> {
             ServerPlayer player = context.get().getSender();
-            if (player != null && player.containerMenu instanceof GunViewMenu menu) {
+            if (player != null && player.containerMenu instanceof CombatDepotMenu menu) {
                 // 更新Card的实际inventory
                 ICard selectedCard = menu.getCards().stream()
                         .filter(c -> c.getName().equals(message.cardName))

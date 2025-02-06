@@ -10,12 +10,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
-import top.bluecraft.combatdepot.common.inventory.menu.GunViewMenu;
+import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 
 public class CardRenderer {
     private static final int PAGE_INFO_COLOR = 0xFFFFFF;
-    private static final Component ARROW_LEFT = Component.literal("<");
-    private static final Component ARROW_RIGHT = Component.literal(">");
     private static final int ARROW_SPACING = 15;
     public static final ResourceLocation BG_RESOURCE = new ResourceLocation(CombatDepot.MODID, "textures/gui/general.png");
 
@@ -41,7 +39,7 @@ public class CardRenderer {
         }
     }
 
-    public static void renderPageInfo(ICard card, GunViewMenu menu, GuiGraphics graphics, Font font, int centerX, int y) {
+    public static void renderPageInfo(ICard card, CombatDepotMenu menu, GuiGraphics graphics, Font font, int centerX, int y) {
         // 渲染页码
         Component pageInfo = Component.translatable("gui." + CombatDepot.MODID + ".page", menu.getCurrentPage() + 1, card.getTotalPages());
         graphics.drawCenteredString(font, pageInfo, centerX, y, PAGE_INFO_COLOR);
@@ -51,7 +49,7 @@ public class CardRenderer {
 
     }
 
-    public static void addPageButtons(GunViewMenu menu, ICard card, Screen screen, int centerX, int y) {
+    public static void addPageButtons(CombatDepotMenu menu, ICard card, Screen screen, int centerX, int y) {
         // 箭头按钮的Y坐标
         int arrowY = y + 20;
 

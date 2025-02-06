@@ -14,7 +14,6 @@ public class CombatDepotCommand {
         LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal(CombatDepot.MODID)
                 .requires(source -> source.hasPermission(0)) // 所有玩家可执行
                 .executes(context -> execute(context.getSource()));
-
         dispatcher.register(command);
     }
 

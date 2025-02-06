@@ -107,7 +107,7 @@ public class CardEditScreen extends Screen {
     private void renderCardPage(GuiGraphics graphics) {
         if (parentScreen.getMinecraft().player != null &&
                 parentScreen.getMinecraft().player.containerMenu instanceof CombatDepotMenu menu) {
-            List<ItemStack> allItems = new ArrayList<>(menu.getCurrentCard().getInventory());
+            List<ItemStack> allItems = new ArrayList<>(card.getInventory());
 
             int startIndex = currentPage * ITEMS_PER_PAGE;
             int endIndex = Math.min(startIndex + ITEMS_PER_PAGE, allItems.size());

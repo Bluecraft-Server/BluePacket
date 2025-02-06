@@ -249,31 +249,30 @@ public class CardItemConfigScreen extends Screen {
         NonNullList<ItemStack> inventory = card.getInventory();
         CombatDepotMenu menu = parentScreen.getParentScreen().getParentScreen().getMenu();
 
-        // 获取当前页面的起始槽位
-        int pageStart = menu.getCurrentPage() * SLOT_SIZE;
-        int pageEnd = Math.min(pageStart + SLOT_SIZE, inventory.size());
-
-        // 优先使用手动指定的槽位（需在页面范围内）
+        // 处理手动指定槽位
         try {
             String slotIndexStr = deleteSlotInput.getValue().trim();
             if (!slotIndexStr.isEmpty()) {
-                int inputSlot = Integer.parseInt(slotIndexStr);
-                if (inputSlot >= 0 && inputSlot < SLOT_SIZE) { // 使用页面局部索引
-                    int globalSlot = pageStart + inputSlot;
-                    if (globalSlot < inventory.size()) {
-                        inventory.set(globalSlot, item);
-                        sendUpdatePacket(globalSlot, item, menu);
-                        return;
+                int slotIndex = Integer.parseInt(slotIndexStr);
+                // 直接使用全局索引
+                if (slotIndex >= 0 && slotIndex < inventory.size()) {
+                    inventory.set(slotIndex, item);
+                    sendUpdatePacket(slotIndex, item, menu);
+                    return;
+                } else {
+                    // 提示索引超出范围
+                    if (minecraft != null && minecraft.player != null) {
+                        minecraft.player.sendSystemMessage(
+                                Component.literal("无效槽位索引: " + slotIndex + " (最大允许值: " + (inventory.size()-1) + ")")
+                        );
                     }
+                    return;
                 }
             }
         } catch (NumberFormatException ignored) {}
 
-        // 自动寻找当前页面的空槽位
-        for (int localIndex = 0; localIndex < SLOT_SIZE; localIndex++) {
-            int globalIndex = pageStart + localIndex;
-            if (globalIndex >= pageEnd) break; // 确保不超过页面范围
-
+        // 全局寻找空槽位
+        for (int globalIndex = 0; globalIndex < inventory.size(); globalIndex++) {
             if (inventory.get(globalIndex).isEmpty()) {
                 inventory.set(globalIndex, item);
                 sendUpdatePacket(globalIndex, item, menu);
@@ -281,11 +280,14 @@ public class CardItemConfigScreen extends Screen {
             }
         }
 
-        // 提示无可用槽位
+        // 提示库存已满
         if (minecraft != null && minecraft.player != null) {
-            minecraft.player.sendSystemMessage(Component.literal("当前页面已满"));
+            minecraft.player.sendSystemMessage(
+                    Component.literal("库存已满 (总容量: " + inventory.size() + " 个槽位)")
+            );
         }
     }
+
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {

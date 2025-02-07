@@ -18,7 +18,7 @@ import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.config.CardConfig;
-import top.bluecraft.combatdepot.config.SomeFunctions;
+import top.bluecraft.combatdepot.config.Config;
 import top.bluecraft.combatdepot.init.MenuRegistration;
 import top.bluecraft.combatdepot.network.SyncCardsPacket;
 
@@ -581,7 +581,7 @@ public class CombatDepotMenu extends AbstractContainerMenu {
 
         @Override
         public boolean mayPlace(@NotNull ItemStack stack) {
-            return SomeFunctions.debug;
+            return Config.debug;
         }
 
         @Override

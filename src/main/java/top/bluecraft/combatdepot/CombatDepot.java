@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import top.bluecraft.combatdepot.client.modelprovider.ModelProvider;
 import top.bluecraft.combatdepot.config.AutoCardConfig;
 import top.bluecraft.combatdepot.config.CardTextureLoader;
+import top.bluecraft.combatdepot.config.ConfigManager;
 import top.bluecraft.combatdepot.init.ItemRegistration;
 import top.bluecraft.combatdepot.init.MenuRegistration;
 import top.bluecraft.combatdepot.lang.CardLanguageManager;
@@ -35,6 +36,7 @@ import top.bluecraft.combatdepot.network.AddItemToCardMessage;
 import top.bluecraft.combatdepot.network.SyncCardsPacket;
 import top.bluecraft.combatdepot.network.UpdateSlotMessage;
 
+import java.io.File;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -42,12 +44,15 @@ import java.util.function.Supplier;
 @Mod(CombatDepot.MODID)
 public class CombatDepot {
 
+    public static final File CONFIGDIR = new File("./config/combatdepot");
+    public static final File CONFIG_FILE = new File(CONFIGDIR, "config.properties");
     public static final String MODID = "combatdepot";
     public static final Logger LOGGER = LogUtils.getLogger();
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
     public static final RegistryObject<CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("combat_depot_tab", () -> CreativeModeTab.builder().withTabsBefore(CreativeModeTabs.COMBAT).icon(ItemRegistration.GENERAL_TERMINAL.get()::getDefaultInstance).displayItems((parameters, output) -> {
         output.accept(ItemRegistration.GENERAL_TERMINAL.get());
     }).title(Component.translatable("tab.combatdepot.creativemodetab")).build());
+    public static final ConfigManager configmanager = new ConfigManager();
     private static final String PROTOCOL_VERSION = "1";
     public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
     private static int messageID = 0;
@@ -91,6 +96,7 @@ public class CombatDepot {
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("HELLO FROM COMMON SETUP");
+        configmanager.load();
         event.enqueueWork(
                 () -> {
                     CombatDepot.addNetworkMessage(AddItemToCardMessage.class, AddItemToCardMessage::encode, AddItemToCardMessage::decode, AddItemToCardMessage::handle);
@@ -108,6 +114,10 @@ public class CombatDepot {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         LOGGER.info("HELLO from server starting");
+    }
+
+    public ConfigManager getConfigmanager() {
+        return configmanager;
     }
 
     // 英文语言文件

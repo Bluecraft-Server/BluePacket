@@ -45,14 +45,12 @@ public class CombatDepot {
     public static final String MODID = "combatdepot";
     public static final Logger LOGGER = LogUtils.getLogger();
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
-
-    private static final String PROTOCOL_VERSION = "1";
-    public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
-
-    private static int messageID = 0;
     public static final RegistryObject<CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("combat_depot_tab", () -> CreativeModeTab.builder().withTabsBefore(CreativeModeTabs.COMBAT).icon(ItemRegistration.GENERAL_TERMINAL.get()::getDefaultInstance).displayItems((parameters, output) -> {
         output.accept(ItemRegistration.GENERAL_TERMINAL.get());
     }).title(Component.translatable("tab.combatdepot.creativemodetab")).build());
+    private static final String PROTOCOL_VERSION = "1";
+    public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
+    private static int messageID = 0;
 
     public CombatDepot() {
         @SuppressWarnings({"removal"})
@@ -68,6 +66,21 @@ public class CombatDepot {
         MinecraftForge.EVENT_BUS.register(this);
         bus.addListener(this::addCreative);
         bus.addListener(CombatDepot::onGatherData);
+    }
+
+    public static void onGatherData(GatherDataEvent event) {
+        var gen = event.getGenerator();
+        var packOutput = gen.getPackOutput();
+        var helper = event.getExistingFileHelper();
+
+        gen.addProvider(event.includeClient(), new ModelProvider(packOutput, helper));
+        gen.addProvider(event.includeClient(), new EnglishLanguageProvider(packOutput));
+        gen.addProvider(event.includeClient(), new ChineseLanguageProvider(packOutput));
+    }
+
+    public static <T> void addNetworkMessage(Class<T> messageType, BiConsumer<T, FriendlyByteBuf> encoder, Function<FriendlyByteBuf, T> decoder, BiConsumer<T, Supplier<NetworkEvent.Context>> messageConsumer) {
+        PACKET_HANDLER.registerMessage(messageID, messageType, encoder, decoder, messageConsumer);
+        messageID++;
     }
 
     private void clientSetup(FMLClientSetupEvent event) {
@@ -90,16 +103,6 @@ public class CombatDepot {
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
-    }
-
-    public static void onGatherData(GatherDataEvent event) {
-        var gen = event.getGenerator();
-        var packOutput = gen.getPackOutput();
-        var helper = event.getExistingFileHelper();
-
-        gen.addProvider(event.includeClient(), new ModelProvider(packOutput, helper));
-        gen.addProvider(event.includeClient(), new EnglishLanguageProvider(packOutput));
-        gen.addProvider(event.includeClient(), new ChineseLanguageProvider(packOutput));
     }
 
     @SubscribeEvent
@@ -132,12 +135,5 @@ public class CombatDepot {
             // 等价于 this.add("item.xiaozhong.sulfur_dust", "硫粉")
             this.add(ItemRegistration.GENERAL_TERMINAL.get(), "通用终端");
         }
-    }
-
-
-
-    public static <T> void addNetworkMessage(Class<T> messageType, BiConsumer<T, FriendlyByteBuf> encoder, Function<FriendlyByteBuf, T> decoder, BiConsumer<T, Supplier<NetworkEvent.Context>> messageConsumer) {
-        PACKET_HANDLER.registerMessage(messageID, messageType, encoder, decoder, messageConsumer);
-        messageID++;
     }
 }

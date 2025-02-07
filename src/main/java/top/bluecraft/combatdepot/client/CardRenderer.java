@@ -13,9 +13,9 @@ import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 
 public class CardRenderer {
+    public static final ResourceLocation BG_RESOURCE = new ResourceLocation(CombatDepot.MODID, "textures/gui/general.png");
     private static final int PAGE_INFO_COLOR = 0xFFFFFF;
     private static final int ARROW_SPACING = 15;
-    public static final ResourceLocation BG_RESOURCE = new ResourceLocation(CombatDepot.MODID, "textures/gui/general.png");
 
     public static void render(ICard card, GuiGraphics graphics, Minecraft minecraft, int x, int y, int width, int height, boolean isSelected) {
         if (minecraft == null) return;

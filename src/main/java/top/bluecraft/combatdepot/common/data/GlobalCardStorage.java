@@ -17,35 +17,6 @@ public class GlobalCardStorage extends SavedData {
     // 存储每个卡片名称对应的物品栏数据
     private final Map<String, NonNullList<ItemStack>> cardInventories = new HashMap<>();
 
-    @Override
-    public @NotNull CompoundTag save(CompoundTag tag) {
-        CompoundTag cardsData = new CompoundTag();
-
-        // 遍历所有卡片数据
-        cardInventories.forEach((cardName, inventory) -> {
-            CompoundTag cardTag = new CompoundTag();
-            ListTag itemsList = new ListTag();
-
-            // 保存每个槽位的物品
-            for (int i = 0; i < inventory.size(); i++) {
-                ItemStack stack = inventory.get(i);
-                if (!stack.isEmpty()) {
-                    CompoundTag slotTag = new CompoundTag();
-                    slotTag.putInt("Slot", i);
-                    stack.save(slotTag);
-                    itemsList.add(slotTag);
-                }
-            }
-
-            cardTag.put("Items", itemsList);
-            cardTag.putInt("Size", inventory.size());
-            cardsData.put(cardName, cardTag);
-        });
-
-        tag.put("Cards", cardsData);
-        return tag;
-    }
-
     public static GlobalCardStorage load(CompoundTag tag) {
         GlobalCardStorage storage = new GlobalCardStorage();
         storage.cardInventories.clear();
@@ -75,6 +46,43 @@ public class GlobalCardStorage extends SavedData {
         return storage;
     }
 
+    public static GlobalCardStorage get(ServerLevel level) {
+        return level.getDataStorage().computeIfAbsent(
+                GlobalCardStorage::load,
+                GlobalCardStorage::new,
+                "card_storage" // 数据的唯一标识符
+        );
+    }
+
+    @Override
+    public @NotNull CompoundTag save(CompoundTag tag) {
+        CompoundTag cardsData = new CompoundTag();
+
+        // 遍历所有卡片数据
+        cardInventories.forEach((cardName, inventory) -> {
+            CompoundTag cardTag = new CompoundTag();
+            ListTag itemsList = new ListTag();
+
+            // 保存每个槽位的物品
+            for (int i = 0; i < inventory.size(); i++) {
+                ItemStack stack = inventory.get(i);
+                if (!stack.isEmpty()) {
+                    CompoundTag slotTag = new CompoundTag();
+                    slotTag.putInt("Slot", i);
+                    stack.save(slotTag);
+                    itemsList.add(slotTag);
+                }
+            }
+
+            cardTag.put("Items", itemsList);
+            cardTag.putInt("Size", inventory.size());
+            cardsData.put(cardName, cardTag);
+        });
+
+        tag.put("Cards", cardsData);
+        return tag;
+    }
+
     public NonNullList<ItemStack> getInventory(String cardName) {
         return cardInventories.computeIfAbsent(cardName,
                 k -> NonNullList.withSize(CombatDepotMenu.getSlotSize(), ItemStack.EMPTY));
@@ -83,13 +91,5 @@ public class GlobalCardStorage extends SavedData {
     public void updateInventory(String cardName, NonNullList<ItemStack> inventory) {
         cardInventories.put(cardName, inventory);
         setDirty();
-    }
-
-    public static GlobalCardStorage get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(
-                GlobalCardStorage::load,
-                GlobalCardStorage::new,
-                "card_storage" // 数据的唯一标识符
-        );
     }
 }

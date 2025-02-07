@@ -31,73 +31,6 @@ public class CardConfig {
     private boolean disableDefaultCards;
     private List<CardEntry> entries;
 
-    public static class CardEntry {
-        private boolean enabled;
-        private String name;
-        private int inventorySize;
-        private String texture;
-        private Map<String, String> translations;
-        private NonNullList<ItemStack> inventory;
-
-
-
-        public ResourceLocation getTexture() {
-            if (texture.startsWith("file:///")) {
-                return new ResourceLocation("combatdepot", "textures/gui/cards/" + new File(texture.substring(8)).getName());
-            }
-            return new ResourceLocation(texture);
-        }
-
-        // Getters
-        public boolean isEnabled() { return enabled; }
-        public String getName() { return name; }
-        public int getInventorySize() { return inventorySize; }
-        public Map<String, String> getTranslations() {
-            if (translations == null) {
-                translations = new HashMap<>();
-            }
-            return translations;
-        }
-
-        // Setters
-        public void setEnabled(boolean enabled) { this.enabled = enabled; }
-        public void setName(String name) { this.name = name; }
-        public void setInventorySize(int inventorySize) { this.inventorySize = inventorySize; }
-        public void setTexture(String texture) { this.texture = texture; }
-        public void setTranslations(Map<String, String> translations) { this.translations = translations; }
-        public void addTranslation(String lang, String text) {
-            getTranslations().put(lang, text);
-        }
-
-        public void setInventory(NonNullList<ItemStack> inventory) {
-            if (inventory == null) {
-                CombatDepot.LOGGER.error("Attempted to set null inventory for card: {}", name);
-                return;
-            }
-
-            // 如果传入的inventory大小与设定的inventorySize不一致，进行调整
-            if (inventory.size() != this.inventorySize) {
-                NonNullList<ItemStack> newInventory = NonNullList.withSize(this.inventorySize, ItemStack.EMPTY);
-                // 复制数据，确保不超出范围
-                for (int i = 0; i < Math.min(inventory.size(), this.inventorySize); i++) {
-                    newInventory.set(i, inventory.get(i));
-                }
-                this.inventory = newInventory;
-                CombatDepot.LOGGER.debug("Adjusted inventory size from {} to {} for card: {}",
-                        inventory.size(), this.inventorySize, name);
-            } else {
-                this.inventory = inventory;
-            }
-        }
-
-        public NonNullList<ItemStack> getInventory() {
-            if (this.inventory == null) {
-                this.inventory = NonNullList.withSize(this.inventorySize, ItemStack.EMPTY);
-            }
-            return this.inventory;
-        }
-    }
-
     // 加载配置
     public static CardConfig load() {
         Path configDir = FMLPaths.CONFIGDIR.get().resolve(CombatDepot.MODID);
@@ -176,8 +109,13 @@ public class CardConfig {
     }
 
     // Getters and Setters
-    public boolean isDisableDefaultCards() { return disableDefaultCards; }
-    public void setDisableDefaultCards(boolean disableDefaultCards) { this.disableDefaultCards = disableDefaultCards; }
+    public boolean isDisableDefaultCards() {
+        return disableDefaultCards;
+    }
+
+    public void setDisableDefaultCards(boolean disableDefaultCards) {
+        this.disableDefaultCards = disableDefaultCards;
+    }
 
     public List<CardEntry> getEntries() {
         if (entries == null) {
@@ -186,7 +124,9 @@ public class CardConfig {
         return entries;
     }
 
-    public void setEntries(List<CardEntry> entries) { this.entries = entries; }
+    public void setEntries(List<CardEntry> entries) {
+        this.entries = entries;
+    }
 
     // 检查卡片是否存在
     public boolean hasCard(String name) {
@@ -234,6 +174,96 @@ public class CardConfig {
                 } else {
                     entry.setInventory(inventory);
                 }
+            }
+        }
+    }
+
+    public static class CardEntry {
+        private boolean enabled;
+        private String name;
+        private int inventorySize;
+        private String texture;
+        private Map<String, String> translations;
+        private NonNullList<ItemStack> inventory;
+
+
+        public ResourceLocation getTexture() {
+            if (texture.startsWith("file:///")) {
+                return new ResourceLocation("combatdepot", "textures/gui/cards/" + new File(texture.substring(8)).getName());
+            }
+            return new ResourceLocation(texture);
+        }
+
+        public void setTexture(String texture) {
+            this.texture = texture;
+        }
+
+        // Getters
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        // Setters
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public int getInventorySize() {
+            return inventorySize;
+        }
+
+        public void setInventorySize(int inventorySize) {
+            this.inventorySize = inventorySize;
+        }
+
+        public Map<String, String> getTranslations() {
+            if (translations == null) {
+                translations = new HashMap<>();
+            }
+            return translations;
+        }
+
+        public void setTranslations(Map<String, String> translations) {
+            this.translations = translations;
+        }
+
+        public void addTranslation(String lang, String text) {
+            getTranslations().put(lang, text);
+        }
+
+        public NonNullList<ItemStack> getInventory() {
+            if (this.inventory == null) {
+                this.inventory = NonNullList.withSize(this.inventorySize, ItemStack.EMPTY);
+            }
+            return this.inventory;
+        }
+
+        public void setInventory(NonNullList<ItemStack> inventory) {
+            if (inventory == null) {
+                CombatDepot.LOGGER.error("Attempted to set null inventory for card: {}", name);
+                return;
+            }
+
+            // 如果传入的inventory大小与设定的inventorySize不一致，进行调整
+            if (inventory.size() != this.inventorySize) {
+                NonNullList<ItemStack> newInventory = NonNullList.withSize(this.inventorySize, ItemStack.EMPTY);
+                // 复制数据，确保不超出范围
+                for (int i = 0; i < Math.min(inventory.size(), this.inventorySize); i++) {
+                    newInventory.set(i, inventory.get(i));
+                }
+                this.inventory = newInventory;
+                CombatDepot.LOGGER.debug("Adjusted inventory size from {} to {} for card: {}",
+                        inventory.size(), this.inventorySize, name);
+            } else {
+                this.inventory = inventory;
             }
         }
     }

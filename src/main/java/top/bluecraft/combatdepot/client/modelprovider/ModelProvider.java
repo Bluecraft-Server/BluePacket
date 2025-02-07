@@ -10,6 +10,7 @@ import top.bluecraft.combatdepot.init.ItemRegistration;
 public class ModelProvider extends ItemModelProvider {
 
     private static final String GNR_TERMINAL_ID = ItemRegistration.GENERAL_TERMINAL.getId().getPath();
+
     public ModelProvider(PackOutput gen, ExistingFileHelper helper) {
         super(gen, CombatDepot.MODID, helper);
     }

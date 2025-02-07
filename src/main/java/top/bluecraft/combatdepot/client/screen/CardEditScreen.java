@@ -18,11 +18,11 @@ import java.util.List;
 
 @OnlyIn(Dist.CLIENT)
 public class CardEditScreen extends Screen {
+    private static final int ITEMS_PER_PAGE = 27;
     private final CardConfigScreen parentScreen;
     private final ICard card;
     private EditBox itemInput;
     private int currentPage = 0;
-    private static final int ITEMS_PER_PAGE = 27;
 
     public CardEditScreen(CardConfigScreen parentScreen, ICard card) {
         super(Component.translatable("gui." + CombatDepot.MODID + ".card.edit",

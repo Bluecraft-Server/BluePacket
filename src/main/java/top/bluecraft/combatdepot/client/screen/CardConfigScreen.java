@@ -16,14 +16,13 @@ import java.util.List;
 
 @OnlyIn(Dist.CLIENT)
 public class CardConfigScreen extends Screen {
-    private final CombatDepotScreen parentScreen;
     private static final int BUTTONS_PER_ROW = 2;
     private static final int BUTTON_WIDTH = 100;
     private static final int BUTTON_HEIGHT = 20;
     private static final int BUTTON_SPACING = 10;
     private static final int VISIBLE_ROWS = 5;  // 一次显示的行数
     private static final int CONTENT_TOP_MARGIN = 50;
-
+    private final CombatDepotScreen parentScreen;
     private int currentScroll = 0;
     private int maxScroll;
     private Button scrollUpButton;

@@ -9,13 +9,12 @@ import top.bluecraft.combatdepot.client.screen.CombatDepotScreen;
 import top.bluecraft.combatdepot.init.MenuRegistration;
 
 
-
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ClientModEvents {
-        @SubscribeEvent
-        public static void clientLoad(FMLClientSetupEvent event) {
-            event.enqueueWork(() -> {
-                MenuScreens.register(MenuRegistration.GUN_VIEW_MENU.get(), CombatDepotScreen::new);
-            });
-        }
+    @SubscribeEvent
+    public static void clientLoad(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> {
+            MenuScreens.register(MenuRegistration.GUN_VIEW_MENU.get(), CombatDepotScreen::new);
+        });
+    }
 }

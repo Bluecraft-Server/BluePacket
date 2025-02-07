@@ -10,8 +10,8 @@ import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 
 public class ConfigSlot extends SlotItemHandler {
     private final int x, y;
-    private ItemStack stack = ItemStack.EMPTY;
     private final Font font;
+    private ItemStack stack = ItemStack.EMPTY;
 
     public ConfigSlot(int x, int y, int index, Font font, CombatDepotMenu menu) {
         super(new ItemStackHandler(1), index, x, y);

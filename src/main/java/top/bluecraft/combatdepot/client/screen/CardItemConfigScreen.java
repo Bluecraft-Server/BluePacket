@@ -26,19 +26,18 @@ import java.util.List;
 
 @OnlyIn(Dist.CLIENT)
 public class CardItemConfigScreen extends Screen {
-    private final CardEditScreen parentScreen;
-    private final ICard card;
-    private EditBox itemInput;
-    private EditBox countInput;
-    private EditBox deleteSlotInput;  // 新增：用于输入要删除的槽位索引
-    private ConfigSlot itemSlot;
-    private final List<Slot> inventorySlots = new ArrayList<>();
-
     // 添加物品栏相关常量
     private static final int INVENTORY_START_X = 0;
     private static final int INVENTORY_START_Y = 0;
     private static final int SLOT_SIZE = 18;
     private static final int SLOT_SPACING = 2;
+    private final CardEditScreen parentScreen;
+    private final ICard card;
+    private final List<Slot> inventorySlots = new ArrayList<>();
+    private EditBox itemInput;
+    private EditBox countInput;
+    private EditBox deleteSlotInput;  // 新增：用于输入要删除的槽位索引
+    private ConfigSlot itemSlot;
 
     public CardItemConfigScreen(CardEditScreen parentScreen, ICard card) {
         super(Component.translatable("gui." + CombatDepot.MODID + ".card.item.config"));
@@ -129,7 +128,7 @@ public class CardItemConfigScreen extends Screen {
                         minecraft.player.sendSystemMessage(Component.literal("删除物品时发生错误"));
                     }
                 })
-                .pos(width / 2 - 10 , height / 2 - 40)
+                .pos(width / 2 - 10, height / 2 - 40)
                 .size(20, 20)
                 .build());
 
@@ -263,13 +262,14 @@ public class CardItemConfigScreen extends Screen {
                     // 提示索引超出范围
                     if (minecraft != null && minecraft.player != null) {
                         minecraft.player.sendSystemMessage(
-                                Component.literal("无效槽位索引: " + slotIndex + " (最大允许值: " + (inventory.size()-1) + ")")
+                                Component.literal("无效槽位索引: " + slotIndex + " (最大允许值: " + (inventory.size() - 1) + ")")
                         );
                     }
                     return;
                 }
             }
-        } catch (NumberFormatException ignored) {}
+        } catch (NumberFormatException ignored) {
+        }
 
         // 全局寻找空槽位
         for (int globalIndex = 0; globalIndex < inventory.size(); globalIndex++) {

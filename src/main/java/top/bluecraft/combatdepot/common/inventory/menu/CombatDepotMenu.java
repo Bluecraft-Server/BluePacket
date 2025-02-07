@@ -20,12 +20,10 @@ import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.config.CardConfig;
 import top.bluecraft.combatdepot.init.MenuRegistration;
 import top.bluecraft.combatdepot.network.SyncCardsPacket;
-import top.bluecraft.combatdepot.network.UpdateSlotMessage;
 
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class CombatDepotMenu extends AbstractContainerMenu {
     // Region: Constants
@@ -45,14 +43,13 @@ public class CombatDepotMenu extends AbstractContainerMenu {
     private final Player player;
     private final Level world;
     private final int x, y, z;
+    // 显示用临时库存（当前页面）
+    private final ItemStackHandler displayHandler = new ItemStackHandler(SLOT_SIZE);
+    private final BitSet takenSlots = new BitSet(SLOT_SIZE);
     private List<ICard> cards;
     private int selectedCardIndex = -1;
     private int currentPage = 0;
     private int cardOffset = 0;
-
-    // 显示用临时库存（当前页面）
-    private final ItemStackHandler displayHandler = new ItemStackHandler(SLOT_SIZE);
-    private final BitSet takenSlots = new BitSet(SLOT_SIZE);
 
     public CombatDepotMenu(int id, Inventory playerInventory) {
         super(MenuRegistration.GUN_VIEW_MENU.get(), id);
@@ -84,9 +81,13 @@ public class CombatDepotMenu extends AbstractContainerMenu {
                 }
             }
         }
-        if (!cards.isEmpty()){
+        if (!cards.isEmpty()) {
             selectCard(0);
         }
+    }
+
+    public static int getSlotSize() {
+        return SLOT_SIZE;
     }
 
     private NonNullList<ItemStack> copyInventory(NonNullList<ItemStack> original) {
@@ -121,6 +122,9 @@ public class CombatDepotMenu extends AbstractContainerMenu {
         }
     }
 
+
+    // 在 CombatDepotMenu 类中添加以下方法
+
     private void saveCurrentCardState() {
         ICard prevCard = cards.get(selectedCardIndex);
         for (int i = 0; i < SLOT_SIZE; i++) {
@@ -132,13 +136,11 @@ public class CombatDepotMenu extends AbstractContainerMenu {
         }
     }
 
-
-    // 在 CombatDepotMenu 类中添加以下方法
-
     /**
      * 加载指定页面的物品到显示库存
+     *
      * @param pageIndex 页码（从0开始）
-     * @param items 当前页的物品列表
+     * @param items     当前页的物品列表
      */
     public void loadPage(int pageIndex, List<ItemStack> items) {
         // 清空当前显示库存
@@ -204,7 +206,9 @@ public class CombatDepotMenu extends AbstractContainerMenu {
     }
 
     private void refreshDisplayInventory() {
-        if (selectedCardIndex == -1) return;
+        if (selectedCardIndex == -1) {
+            return;
+        }
 
         ICard card = cards.get(selectedCardIndex);
         int startIndex = currentPage * SLOT_SIZE;
@@ -436,18 +440,13 @@ public class CombatDepotMenu extends AbstractContainerMenu {
         broadcastChanges();
     }
 
-    public void setCardOffset(int offset) {
-        this.cardOffset = offset;
-        broadcastChanges(); // 通知客户端更新
+    // Region: Getters
+    public List<ICard> getCards() {
+        return cards;
     }
 
     public void setCards(List<ICard> cards) {
         this.cards = cards;
-    }
-
-    // Region: Getters
-    public List<ICard> getCards() {
-        return cards;
     }
 
     public int getSelectedCardIndex() {
@@ -493,10 +492,6 @@ public class CombatDepotMenu extends AbstractContainerMenu {
         return null; // 如果没有选中卡片，返回 null
     }
 
-    public static int getSlotSize() {
-        return SLOT_SIZE;
-    }
-
     @Override
     public void broadcastChanges() {
         super.broadcastChanges();
@@ -515,25 +510,22 @@ public class CombatDepotMenu extends AbstractContainerMenu {
         return cardOffset;
     }
 
+    public void setCardOffset(int offset) {
+        this.cardOffset = offset;
+        broadcastChanges(); // 通知客户端更新
+    }
+
     public static class Card implements ICard {
         private final String name;
-        private NonNullList<ItemStack> inventory;
         private final int slotsPerPage;
         private final ResourceLocation texture;
+        private NonNullList<ItemStack> inventory;
 
         public Card(CardConfig.CardEntry entry, NonNullList<ItemStack> inventory) {
             this.name = entry.getName();
             this.inventory = inventory;
             this.slotsPerPage = SLOT_SIZE;
             this.texture = entry.getTexture();
-        }
-
-        public void setInventory(NonNullList<ItemStack> inventory) {
-            if (inventory == null) {
-                CombatDepot.LOGGER.error("Attempted to set null inventory for card: {}", name);
-                return;
-            }
-            this.inventory = inventory;
         }
 
         public List<ItemStack> getPageItems(int page) {
@@ -552,8 +544,21 @@ public class CombatDepotMenu extends AbstractContainerMenu {
         }
 
         // Getters
-        public String getName() { return name; }
-        public NonNullList<ItemStack> getInventory() { return inventory; }
+        public String getName() {
+            return name;
+        }
+
+        public NonNullList<ItemStack> getInventory() {
+            return inventory;
+        }
+
+        public void setInventory(NonNullList<ItemStack> inventory) {
+            if (inventory == null) {
+                CombatDepot.LOGGER.error("Attempted to set null inventory for card: {}", name);
+                return;
+            }
+            this.inventory = inventory;
+        }
 
         public int getSlotsPerPage() {
             return slotsPerPage;
@@ -563,6 +568,7 @@ public class CombatDepotMenu extends AbstractContainerMenu {
             return texture;
         }
     }
+
     private static class DynamicSlot extends SlotItemHandler {
         private final CombatDepotMenu menu;
         private boolean hasBeenTaken = false;

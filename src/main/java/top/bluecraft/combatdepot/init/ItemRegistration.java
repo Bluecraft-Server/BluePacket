@@ -10,5 +10,5 @@ import top.bluecraft.combatdepot.common.item.GeneralTerminal;
 public class ItemRegistration {
     public static final DeferredRegister<Item> REGISTRATION = DeferredRegister.create(ForgeRegistries.ITEMS, CombatDepot.MODID);
 
-    public static final RegistryObject<Item> GENERAL_TERMINAL= REGISTRATION.register("general_terminal", GeneralTerminal::new);
+    public static final RegistryObject<Item> GENERAL_TERMINAL = REGISTRATION.register("general_terminal", GeneralTerminal::new);
 }

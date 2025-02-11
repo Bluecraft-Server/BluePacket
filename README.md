@@ -1,4 +1,4 @@
-# CompatDepot 一个自定义发放物品的库
+# CombatDepot 一个自定义发放物品的库
 
 ![logo](img/logo.png)
 

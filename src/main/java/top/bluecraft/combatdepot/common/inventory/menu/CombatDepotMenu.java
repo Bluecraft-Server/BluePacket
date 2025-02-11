@@ -3,12 +3,14 @@ package top.bluecraft.combatdepot.common.inventory.menu;
 import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
@@ -49,16 +51,17 @@ public class CombatDepotMenu extends AbstractContainerMenu {
 
         // 加载卡片配置
         CardConfig config = CardConfig.load();
+
+        // 确保在服务端时从SavedData加载最新数据
         if (!world.isClientSide()) {
             GlobalCardStorage storage = GlobalCardStorage.get((ServerLevel) world);
             config.loadFromGlobalStorage(storage);
         }
+
         this.cards = config.createCards();
 
         // 初始化槽位
         initializeSlots(playerInventory);
-
-        // 立即更新显示
         updateCardSlots();
     }
 
@@ -136,7 +139,7 @@ public class CombatDepotMenu extends AbstractContainerMenu {
             }
         }
 
-        // 强制同步到客户端
+        // 在客户端时发送同步包到服务端
         if (!world.isClientSide()) {
             syncDisplayInventory();
         }
@@ -216,19 +219,12 @@ public class CombatDepotMenu extends AbstractContainerMenu {
     }
 
     public void syncDisplayInventory() {
-        if (!world.isClientSide()) {
-            CombatDepot.PACKET_HANDLER.sendToServer(new SyncCardsPacket(cards, cardOffset));
-        }
-    }
-
-    public void savePersistentData() {
-        if (!world.isClientSide()) {
-            GlobalCardStorage storage = GlobalCardStorage.get((ServerLevel) world);
-            ICard currentCard = getCurrentCard();
-            if (currentCard != null) {
-                storage.updateInventory(currentCard.getName(), currentCard.getInventory());
-                storage.setDirty();
-            }
+        if (!world.isClientSide) {
+            ServerPlayer serverPlayer = (ServerPlayer) player;
+            CombatDepot.PACKET_HANDLER.send(
+                    PacketDistributor.PLAYER.with(() -> serverPlayer),
+                    new SyncCardsPacket(cards, cardOffset)
+            );
         }
     }
 
@@ -335,16 +331,16 @@ public class CombatDepotMenu extends AbstractContainerMenu {
                 currentCard.getInventory().set(globalIndex, newStack);
                 updateDisplayedItem(newStack);
                 setChanged();
-
-                // 保存到全局存储
-                menu.savePersistentData();
             }
         }
 
         @Override
         public void setChanged() {
             super.setChanged();
-            menu.syncDisplayInventory();
+            // 移除保存调用，只保留客户端同步
+            if (menu.getWorld().isClientSide()) {
+                menu.syncDisplayInventory();
+            }
         }
 
         @Override

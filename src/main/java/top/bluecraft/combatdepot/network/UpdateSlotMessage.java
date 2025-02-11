@@ -36,7 +36,7 @@ public record UpdateSlotMessage(String cardName, int slotIndex, ItemStack stack)
 
                 if (card != null && msg.slotIndex() >= 0 && msg.slotIndex() < card.getInventory().size()) {
                     card.getInventory().set(msg.slotIndex(), msg.stack());
-                    menu.savePersistentData(); // 保存到全局存储
+                    // 移除了 savePersistentData 调用
                 }
             }
         });

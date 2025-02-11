@@ -25,8 +25,11 @@ import java.util.Map;
 
 public class CardConfig {
     private static final Gson GSON = new GsonBuilder()
-            .excludeFieldsWithModifiers(Modifier.TRANSIENT)
+            .excludeFieldsWithModifiers(Modifier.TRANSIENT, Modifier.STATIC)
+            .setLenient()
+            .setPrettyPrinting()
             .create();
+
     private static final String CONFIG_FILE = "cards.json";
 
     private boolean disableDefaultCards;

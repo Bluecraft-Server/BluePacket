@@ -54,9 +54,6 @@ public class AddItemToCardMessage {
                     storage.updateInventory(message.cardName, selectedCard.getInventory());
                     storage.setDirty();
                 }
-
-                // 刷新显示
-                menu.syncDisplayInventory();
             }
         });
         ctx.setPacketHandled(true);

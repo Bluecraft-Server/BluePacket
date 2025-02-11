@@ -118,9 +118,6 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
                     menu.selectCard(currentSelectedIndex);
                     menu.setPage(currentPage);
                 }
-
-                // 刷新显示
-                menu.syncDisplayInventory();
             }
         });
         context.setPacketHandled(true);

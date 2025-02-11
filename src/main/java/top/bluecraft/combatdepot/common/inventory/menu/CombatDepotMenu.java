@@ -1,396 +1,176 @@
 package top.bluecraft.combatdepot.common.inventory.menu;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.items.ItemStackHandler;
-import net.minecraftforge.items.SlotItemHandler;
-import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.config.CardConfig;
-import top.bluecraft.combatdepot.config.Config;
 import top.bluecraft.combatdepot.init.MenuRegistration;
 import top.bluecraft.combatdepot.network.SyncCardsPacket;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 
 public class CombatDepotMenu extends AbstractContainerMenu {
-    // Region: Constants
-    private static final int GRID_ROWS = 10;
-    private static final int GRID_COLS = 11;
-    private static final int SLOT_SIZE = 110; // 10*11 - 最后一个槽位
-    private static final int SLOT_SPACING = 18;
-
-    // GUI 布局坐标
-    private static final int GRID_START_X = 10;
-    private static final int GRID_START_Y = 10;
-    private static final int PLAYER_INV_START_X = 220;
-    private static final int PLAYER_INV_START_Y = 111;
+    private static final int PLAYER_INVENTORY_START_X = 220;
+    private static final int PLAYER_INVENTORY_START_Y = 111;
     private static final int HOTBAR_START_Y = 169;
+    private static final int SLOT_SIZE = 18;
+    private static final int SLOTS_PER_PAGE = 110;
 
-    // Region: Fields
     private final Player player;
     private final Level world;
-    private final int x, y, z;
-    // 显示用临时库存（当前页面）
-    private final ItemStackHandler displayHandler = new ItemStackHandler(SLOT_SIZE);
-    private final BitSet takenSlots = new BitSet(SLOT_SIZE);
-    private List<ICard> cards;
-    private int selectedCardIndex = -1;
+    private final List<ICard> cards;
+    private int selectedCardIndex = 0;
     private int currentPage = 0;
     private int cardOffset = 0;
+    private final List<CardSlot> cardSlots = new ArrayList<>();
 
-    public CombatDepotMenu(int id, Inventory playerInventory) {
-        super(MenuRegistration.GUN_VIEW_MENU.get(), id);
+    // Slot ranges
+    private static final int CARD_INVENTORY_START = 0;
+    private static final int PLAYER_INVENTORY_START = SLOTS_PER_PAGE;
+    private static final int PLAYER_INVENTORY_END = PLAYER_INVENTORY_START + 36;
+
+    public CombatDepotMenu(int windowId, Inventory playerInventory, int selectedCard, int page) {
+        super(MenuRegistration.GUN_VIEW_MENU.get(), windowId);
         this.player = playerInventory.player;
         this.world = player.level();
-        BlockPos pos = player.blockPosition();
-        this.x = pos.getX();
-        this.y = pos.getY();
-        this.z = pos.getZ();
-        setupSlots(playerInventory);
+        this.selectedCardIndex = selectedCard;
+        this.currentPage = page;
 
-        // 初始化卡牌数据（客户端和服务端都需要）
+        // 加载卡片配置
         CardConfig config = CardConfig.load();
+        if (!world.isClientSide()) {
+            GlobalCardStorage storage = GlobalCardStorage.get((ServerLevel) world);
+            config.loadFromGlobalStorage(storage);
+        }
         this.cards = config.createCards();
 
-        if (player.getServer() != null) {
-            GlobalCardStorage storage = GlobalCardStorage.get(player.getServer().overworld());
-            System.out.println("发送请求");
-            config.loadFromGlobalStorage(storage);
+        // 初始化槽位
+        initializeSlots(playerInventory);
 
-            for (ICard card : cards) {
-                NonNullList<ItemStack> savedInventory = storage.getInventory(card.getName());
-                if (savedInventory != null) {
-                    // 将全局存储的数据复制到卡片库存
-                    NonNullList<ItemStack> inventory = card.getInventory();
-                    for (int i = 0; i < Math.min(savedInventory.size(), inventory.size()); i++) {
-                        inventory.set(i, savedInventory.get(i).copy());
-                    }
-                }
-            }
-        }
-        if (!cards.isEmpty()) {
-            selectCard(0);
-        }
+        // 立即更新显示
+        updateCardSlots();
     }
 
-    public static int getSlotSize() {
-        return SLOT_SIZE;
-    }
-
-    private NonNullList<ItemStack> copyInventory(NonNullList<ItemStack> original) {
-        NonNullList<ItemStack> copy = NonNullList.createWithCapacity(original.size());
-        for (ItemStack stack : original) {
-            copy.add(stack.copy());
-        }
-        return copy;
-    }
-
-    public void markSlotTaken(int slotIndex) {
-        takenSlots.set(slotIndex);
-        broadcastChanges();
-    }
-
-    public boolean isSlotTaken(int slotIndex) {
-        return takenSlots.get(slotIndex);
-    }
-
-    public void selectCard(int index) {
-        if (index >= 0 && index < cards.size()) {
-            // 保存当前卡片的显示状态
-            if (this.selectedCardIndex != -1) {
-                saveCurrentCardState();
-            }
-
-            this.selectedCardIndex = index;
-            this.currentPage = 0;
-            this.takenSlots.clear(); // 重置槽位占用状态
-            refreshDisplayInventory();
-            broadcastChanges();
-        }
-    }
-
-
-    // 在 CombatDepotMenu 类中添加以下方法
-
-    private void saveCurrentCardState() {
-        ICard prevCard = cards.get(selectedCardIndex);
-        for (int i = 0; i < SLOT_SIZE; i++) {
-            ItemStack displayStack = displayHandler.getStackInSlot(i);
-            int actualIndex = currentPage * SLOT_SIZE + i;
-            if (actualIndex < prevCard.getInventory().size()) {
-                prevCard.getInventory().set(actualIndex, displayStack.copy());
-            }
-        }
-    }
-
-    /**
-     * 加载指定页面的物品到显示库存
-     *
-     * @param pageIndex 页码（从0开始）
-     * @param items     当前页的物品列表
-     */
-    public void loadPage(int pageIndex, List<ItemStack> items) {
-        // 清空当前显示库存
-        for (int i = 0; i < SLOT_SIZE; i++) {
-            displayHandler.setStackInSlot(i, ItemStack.EMPTY);
-            takenSlots.clear(i);
-        }
-
-        // 加载新的页面数据
-        for (int i = 0; i < Math.min(items.size(), SLOT_SIZE); i++) {
-            ItemStack stack = items.get(i);
-            if (!stack.isEmpty()) {
-                displayHandler.setStackInSlot(i, stack.copy());
-                takenSlots.set(i); // 标记槽位已被取出过
+    private void initializeSlots(Inventory playerInventory) {
+        // 添加卡片槽位
+        for (int row = 0; row < 10; row++) {
+            for (int col = 0; col < 11; col++) {
+                int index = col + row * 11;
+                int x = 10 + col * SLOT_SIZE;
+                int y = 10 + row * SLOT_SIZE;
+                CardSlot slot = new CardSlot(this, index, x, y);
+                cardSlots.add(slot);
+                addSlot(slot);
             }
         }
 
-        // 通知客户端同步
-        broadcastChanges();
-
-        // 调试日志（可选）
-        CombatDepot.LOGGER.debug("Loaded page {} with {} items", pageIndex, items.size());
-    }
-
-    /**
-     * 获取当前显示库存的页面物品
-     */
-    public List<ItemStack> getCurrentPageItems() {
-        List<ItemStack> items = new ArrayList<>(SLOT_SIZE);
-        for (int i = 0; i < SLOT_SIZE; i++) {
-            items.add(displayHandler.getStackInSlot(i));
+        // 添加玩家物品栏槽位
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                addSlot(new Slot(playerInventory,
+                        col + (row + 1) * 9,
+                        PLAYER_INVENTORY_START_X + col * SLOT_SIZE,
+                        PLAYER_INVENTORY_START_Y + row * SLOT_SIZE));
+            }
         }
-        return items;
+
+        // 添加玩家快捷栏槽位
+        for (int col = 0; col < 9; col++) {
+            addSlot(new Slot(playerInventory,
+                    col,
+                    PLAYER_INVENTORY_START_X + col * SLOT_SIZE,
+                    HOTBAR_START_Y));
+        }
     }
 
     public void setPage(int page) {
-        if (selectedCardIndex == -1) return;
+        if (getCurrentCard() != null && page >= 0 && page < getCurrentCard().getTotalPages()) {
+            currentPage = page;
+            updateCardSlots();
 
-        // 保存当前页面状态
-        saveCurrentPageState();
-
-        ICard card = cards.get(selectedCardIndex);
-        int totalPages = card.getTotalPages();
-        if (page >= 0 && page < totalPages) {
-            this.currentPage = page;
-            this.takenSlots.clear(); // 切换页面时重置占用状态
-            refreshDisplayInventory();
-            broadcastChanges();
+            // 如果在服务端，同步到客户端
+            if (!world.isClientSide()) {
+                syncDisplayInventory();
+            }
         }
     }
 
-    private void saveCurrentPageState() {
+    public void selectCard(int index) {
+        if (index >= 0 && index < cards.size() && index != selectedCardIndex) {
+            selectedCardIndex = index;
+            currentPage = 0;
+            updateCardSlots();
+
+            // 如果在服务端，同步到客户端
+            if (!world.isClientSide()) {
+                syncDisplayInventory();
+            }
+        }
+    }
+
+    private void updateCardSlots() {
         ICard currentCard = getCurrentCard();
         if (currentCard == null) return;
 
-        int startIndex = currentPage * SLOT_SIZE;
-        for (int i = 0; i < SLOT_SIZE; i++) {
-            int actualIndex = startIndex + i;
-            if (actualIndex < currentCard.getInventory().size()) {
-                currentCard.getInventory().set(actualIndex, displayHandler.getStackInSlot(i).copy());
-            }
-        }
-    }
+        NonNullList<ItemStack> inventory = currentCard.getInventory();
+        int startIndex = currentPage * SLOTS_PER_PAGE;
 
-    private void refreshDisplayInventory() {
-        if (selectedCardIndex == -1) {
-            return;
-        }
-
-        ICard card = cards.get(selectedCardIndex);
-        int startIndex = currentPage * SLOT_SIZE;
-
-        // 清空当前显示
-        for (int i = 0; i < SLOT_SIZE; i++) {
-            displayHandler.setStackInSlot(i, ItemStack.EMPTY);
-        }
-
-        // 从 Card 的 inventory 加载到 displayHandler
-        for (int i = 0; i < SLOT_SIZE; i++) {
-            int actualIndex = startIndex + i;
-            if (actualIndex < card.getInventory().size()) {
-                ItemStack stack = card.getInventory().get(actualIndex);
-                if (!stack.isEmpty()) {
-                    displayHandler.setStackInSlot(i, stack.copy());
-                    CombatDepot.LOGGER.debug("Card {} inventory at slot {}: {}",
-                            card.getName(),
-                            actualIndex,
-                            stack.isEmpty() ? "empty" : stack.getItem().getDefaultInstance().getDisplayName()
-                    );
-                }
+        // 更新所有卡片槽位
+        for (CardSlot slot : cardSlots) {
+            int globalIndex = startIndex + slot.getSlotIndex();
+            if (globalIndex < inventory.size()) {
+                slot.updateDisplayedItem(inventory.get(globalIndex));
+            } else {
+                slot.updateDisplayedItem(ItemStack.EMPTY);
             }
         }
 
-        // 强制同步
-        broadcastChanges();
-    }
-
-    // Region: Slot Management
-    private void setupSlots(Inventory playerInventory) {
-        // 网格槽位
-        for (int row = 0; row < GRID_ROWS; row++) {
-            for (int col = 0; col < GRID_COLS; col++) {
-                int index = row * GRID_COLS + col;
-
-                addSlot(new DynamicSlot(
-                        displayHandler,
-                        index,
-                        GRID_START_X + col * SLOT_SPACING,
-                        GRID_START_Y + row * SLOT_SPACING,
-                        this
-                ));
-            }
-        }
-
-        // 玩家物品栏
-        for (int row = 0; row < 3; ++row) {
-            for (int col = 0; col < 9; ++col) {
-                addSlot(new Slot(playerInventory,
-                        col + row * 9 + 9,
-                        PLAYER_INV_START_X + col * SLOT_SPACING,
-                        PLAYER_INV_START_Y + row * SLOT_SPACING
-                ));
-            }
-        }
-
-        // 快捷栏
-        for (int col = 0; col < 9; ++col) {
-            addSlot(new Slot(playerInventory, col,
-                    PLAYER_INV_START_X + col * SLOT_SPACING,
-                    HOTBAR_START_Y
-            ));
+        // 强制同步到客户端
+        if (!world.isClientSide()) {
+            syncDisplayInventory();
         }
     }
 
     @Override
-    public @NotNull ItemStack quickMoveStack(@NotNull Player playerIn, int index) {
+    public @NotNull ItemStack quickMoveStack(@NotNull Player player, int index) {
         ItemStack itemstack = ItemStack.EMPTY;
         Slot slot = this.slots.get(index);
+
         if (slot.hasItem()) {
-            ItemStack itemstack1 = slot.getItem();
-            itemstack = itemstack1.copy();
-            if (index < 110) {
-                if (!this.moveItemStackTo(itemstack1, 1, this.slots.size(), true))
+            ItemStack stack = slot.getItem();
+            itemstack = stack.copy();
+
+            if (index < PLAYER_INVENTORY_START) {
+                // Move from card inventory to player inventory
+                if (!this.moveItemStackTo(stack, PLAYER_INVENTORY_START, PLAYER_INVENTORY_END, true)) {
                     return ItemStack.EMPTY;
-                slot.onQuickCraft(itemstack1, itemstack);
-            } else if (!this.moveItemStackTo(itemstack1, 0, 1, false)) {
-                if (index < 110 + 27) {
-                    if (!this.moveItemStackTo(itemstack1, 1 + 27, this.slots.size(), true))
-                        return ItemStack.EMPTY;
-                } else {
-                    if (!this.moveItemStackTo(itemstack1, 1, 1 + 27, false))
-                        return ItemStack.EMPTY;
                 }
-                return ItemStack.EMPTY;
-            }
-            if (itemstack1.getCount() == 0)
-                slot.set(ItemStack.EMPTY);
-            else
-                slot.setChanged();
-            if (itemstack1.getCount() == itemstack.getCount())
-                return ItemStack.EMPTY;
-            slot.onTake(playerIn, itemstack1);
-        }
-        return itemstack;
-    }
-
-    @Override
-    protected boolean moveItemStackTo(@NotNull ItemStack p_38904_, int p_38905_, int p_38906_, boolean p_38907_) {
-        boolean flag = false;
-        int i = p_38905_;
-        if (p_38907_) {
-            i = p_38906_ - 1;
-        }
-        if (p_38904_.isStackable()) {
-            while (!p_38904_.isEmpty()) {
-                if (p_38907_) {
-                    if (i < p_38905_) {
-                        break;
-                    }
-                } else if (i >= p_38906_) {
-                    break;
-                }
-                Slot slot = this.slots.get(i);
-                ItemStack itemstack = slot.getItem();
-                if (slot.mayPlace(itemstack) && !itemstack.isEmpty() && ItemStack.isSameItemSameTags(p_38904_, itemstack)) {
-                    int j = itemstack.getCount() + p_38904_.getCount();
-                    int maxSize = Math.min(slot.getMaxStackSize(), p_38904_.getMaxStackSize());
-                    if (j <= maxSize) {
-                        p_38904_.setCount(0);
-                        itemstack.setCount(j);
-                        slot.set(itemstack);
-                        flag = true;
-                    } else if (itemstack.getCount() < maxSize) {
-                        p_38904_.shrink(maxSize - itemstack.getCount());
-                        itemstack.setCount(maxSize);
-                        slot.set(itemstack);
-                        flag = true;
-                    }
-                }
-                if (p_38907_) {
-                    --i;
-                } else {
-                    ++i;
-                }
-            }
-        }
-        if (!p_38904_.isEmpty()) {
-            if (p_38907_) {
-                i = p_38906_ - 1;
             } else {
-                i = p_38905_;
-            }
-            while (true) {
-                if (p_38907_) {
-                    if (i < p_38905_) {
-                        break;
-                    }
-                } else if (i >= p_38906_) {
-                    break;
-                }
-                Slot slot1 = this.slots.get(i);
-                ItemStack itemstack1 = slot1.getItem();
-                if (itemstack1.isEmpty() && slot1.mayPlace(p_38904_)) {
-                    if (p_38904_.getCount() > slot1.getMaxStackSize()) {
-                        slot1.setByPlayer(p_38904_.split(slot1.getMaxStackSize()));
-                    } else {
-                        slot1.setByPlayer(p_38904_.split(p_38904_.getCount()));
-                    }
-                    slot1.setChanged();
-                    flag = true;
-                    break;
-                }
-                if (p_38907_) {
-                    --i;
-                } else {
-                    ++i;
+                // Move from player inventory to card inventory
+                if (!this.moveItemStackTo(stack, CARD_INVENTORY_START, PLAYER_INVENTORY_START, false)) {
+                    return ItemStack.EMPTY;
                 }
             }
-        }
-        return flag;
-    }
 
-    // Region: Data Persistence
-    @Override
-    public void removed(@NotNull Player player) {
-        super.removed(player);
-        if (!player.level().isClientSide()) {
-            savePersistentData();
+            if (stack.isEmpty()) {
+                slot.set(ItemStack.EMPTY);
+            } else {
+                slot.setChanged();
+            }
         }
+
+        return itemstack;
     }
 
     @Override
@@ -398,113 +178,21 @@ public class CombatDepotMenu extends AbstractContainerMenu {
         return true;
     }
 
-    public void savePersistentData() {
-        if (player.getServer() == null) return;
-
-        GlobalCardStorage storage = GlobalCardStorage.get(player.getServer().overworld());
-
-        cards.forEach(card -> {
-            NonNullList<ItemStack> globalInventory = storage.getInventory(card.getName());
-            NonNullList<ItemStack> currentInventory = card.getInventory();
-
-            // 添加数据验证
-            if (currentInventory == null || currentInventory.isEmpty()) {
-                CombatDepot.LOGGER.warn("Card {} has empty inventory!", card.getName());
-                return;
-            }
-
-            // 确保globalInventory大小正确
-            if (globalInventory.size() != currentInventory.size()) {
-                globalInventory = NonNullList.withSize(currentInventory.size(), ItemStack.EMPTY);
-            }
-
-            // 只保存非空物品
-            for (int i = 0; i < currentInventory.size(); i++) {
-                ItemStack stack = currentInventory.get(i);
-                if (!stack.isEmpty()) {
-                    globalInventory.set(i, stack.copy());
-                    CombatDepot.LOGGER.debug("Saved item in slot {}: {}", i, stack.getDisplayName().getString());
-                }
-            }
-
-            storage.updateInventory(card.getName(), globalInventory);
-        });
-
-        storage.setDirty();
+    // Getters and setters
+    public ICard getCurrentCard() {
+        return selectedCardIndex >= 0 && selectedCardIndex < cards.size() ? cards.get(selectedCardIndex) : null;
     }
 
-    public void syncDisplayInventory() {
-        List<ItemStack> pageItems = getCurrentCard().getPageItems(currentPage);
-        for (int i = 0; i < SLOT_SIZE; i++) {
-            displayHandler.setStackInSlot(i, i < pageItems.size() ? pageItems.get(i) : ItemStack.EMPTY);
-        }
-        broadcastChanges();
-    }
-
-    // Region: Getters
     public List<ICard> getCards() {
         return cards;
-    }
-
-    public void setCards(List<ICard> cards) {
-        this.cards = cards;
-    }
-
-    public int getSelectedCardIndex() {
-        return selectedCardIndex;
     }
 
     public int getCurrentPage() {
         return currentPage;
     }
 
-    public ItemStackHandler getDisplayHandler() {
-        return displayHandler;
-    }
-
-    public Level getWorld() {
-        return world;
-    }
-
-    public int getX() {
-        return x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public int getZ() {
-        return z;
-    }
-
-    public Player getPlayer() {
-        return player;
-    }
-
-    public BitSet getTakenSlots() {
-        return takenSlots;
-    }
-
-    public ICard getCurrentCard() {
-        if (selectedCardIndex >= 0 && selectedCardIndex < cards.size()) {
-            return cards.get(selectedCardIndex);
-        }
-        return null; // 如果没有选中卡片，返回 null
-    }
-
-    @Override
-    public void broadcastChanges() {
-        super.broadcastChanges();
-
-        // 服务端向客户端同步数据
-        if (!this.world.isClientSide) {
-            ServerPlayer player = (ServerPlayer) this.player;
-            CombatDepot.PACKET_HANDLER.send(
-                    PacketDistributor.PLAYER.with(() -> player),
-                    new SyncCardsPacket(this.cards, cardOffset)
-            );
-        }
+    public int getSelectedCardIndex() {
+        return selectedCardIndex;
     }
 
     public int getCardOffset() {
@@ -513,120 +201,181 @@ public class CombatDepotMenu extends AbstractContainerMenu {
 
     public void setCardOffset(int offset) {
         this.cardOffset = offset;
-        broadcastChanges(); // 通知客户端更新
     }
 
+    public Player getPlayer() {
+        return player;
+    }
+
+    public Level getWorld() {
+        return world;
+    }
+
+    public static int getSlotSize() {
+        return SLOTS_PER_PAGE;
+    }
+
+    public void syncDisplayInventory() {
+        if (!world.isClientSide()) {
+            CombatDepot.PACKET_HANDLER.sendToServer(new SyncCardsPacket(cards, cardOffset));
+        }
+    }
+
+    public void savePersistentData() {
+        if (!world.isClientSide()) {
+            GlobalCardStorage storage = GlobalCardStorage.get((ServerLevel) world);
+            ICard currentCard = getCurrentCard();
+            if (currentCard != null) {
+                storage.updateInventory(currentCard.getName(), currentCard.getInventory());
+                storage.setDirty();
+            }
+        }
+    }
+
+    public void setCards(List<ICard> newCards) {
+        cards.clear();
+        cards.addAll(newCards);
+        if (selectedCardIndex >= cards.size()) {
+            selectedCardIndex = Math.max(0, cards.size() - 1);
+        }
+    }
+
+    // Inner classes
     public static class Card implements ICard {
-        private final String name;
-        private final int slotsPerPage;
-        private final ResourceLocation texture;
+        private final CardConfig.CardEntry entry;
         private NonNullList<ItemStack> inventory;
 
         public Card(CardConfig.CardEntry entry, NonNullList<ItemStack> inventory) {
-            this.name = entry.getName();
+            this.entry = entry;
             this.inventory = inventory;
-            this.slotsPerPage = SLOT_SIZE;
-            this.texture = entry.getTexture();
         }
 
-        public List<ItemStack> getPageItems(int page) {
-            int start = page * slotsPerPage;
-            int end = Math.min(start + slotsPerPage, inventory.size());
-
-            List<ItemStack> items = new ArrayList<>();
-            for (int i = start; i < end; i++) {
-                items.add(inventory.get(i));
-            }
-            return items;
-        }
-
-        public int getTotalPages() {
-            return (int) Math.ceil((double) inventory.size() / slotsPerPage);
-        }
-
-        // Getters
+        @Override
         public String getName() {
-            return name;
+            return entry.getName();
         }
 
+        @Override
         public NonNullList<ItemStack> getInventory() {
             return inventory;
         }
 
+        @Override
         public void setInventory(NonNullList<ItemStack> inventory) {
-            if (inventory == null) {
-                CombatDepot.LOGGER.error("Attempted to set null inventory for card: {}", name);
-                return;
-            }
             this.inventory = inventory;
         }
 
-        public int getSlotsPerPage() {
-            return slotsPerPage;
+        @Override
+        public List<ItemStack> getPageItems(int page) {
+            int startIndex = page * SLOTS_PER_PAGE;
+            int endIndex = Math.min(startIndex + SLOTS_PER_PAGE, inventory.size());
+            return inventory.subList(startIndex, endIndex);
         }
 
+        @Override
+        public int getTotalPages() {
+            return (inventory.size() + SLOTS_PER_PAGE - 1) / SLOTS_PER_PAGE;
+        }
+
+        @Override
+        public int getSlotsPerPage() {
+            return SLOTS_PER_PAGE;
+        }
+
+        @Override
         public ResourceLocation getTexture() {
-            return texture;
+            return entry.getTexture();
         }
     }
 
-    private static class DynamicSlot extends SlotItemHandler {
+    private static class CardSlot extends Slot {
         private final CombatDepotMenu menu;
-        private boolean hasBeenTaken = false;
+        private final int slotIndex;
+        private ItemStack displayedItem = ItemStack.EMPTY;
 
-        public DynamicSlot(ItemStackHandler handler, int index, int x, int y, CombatDepotMenu menu) {
-            super(handler, index, x, y);
+        public CardSlot(CombatDepotMenu menu, int index, int x, int y) {
+            super(new Inventory(null) {
+                @Override
+                public @NotNull ItemStack getItem(int slot) {
+                    return ItemStack.EMPTY;
+                }
+            }, index, x, y);
             this.menu = menu;
+            this.slotIndex = index;
+
+            // 初始化显示的物品
+            if (menu.getCurrentCard() != null) {
+                int globalIndex = getGlobalIndex();
+                if (globalIndex < menu.getCurrentCard().getInventory().size()) {
+                    this.displayedItem = menu.getCurrentCard().getInventory().get(globalIndex).copy();
+                }
+            }
         }
 
         @Override
         public boolean mayPlace(@NotNull ItemStack stack) {
-            return Config.debug;
+            ICard currentCard = menu.getCurrentCard();
+            return currentCard != null && getGlobalIndex() < currentCard.getInventory().size();
         }
 
         @Override
-        public boolean mayPickup(Player playerIn) {
-            // 检查是否已经被取出过
-            if (hasBeenTaken) {
-                // 如果已经被取出过，则只允许创造模式或OP权限的玩家取出
-                return playerIn.isCreative() || playerIn.hasPermissions(2);
-            }
-            // 如果还没有被取出过，任何人都可以取出
-            return true;
-        }
-
-        @Override
-        public void onTake(@NotNull Player pPlayer, @NotNull ItemStack pStack) {
-            super.onTake(pPlayer, pStack);
-            // 标记这个槽位已经被取出过
-            hasBeenTaken = true;
-            menu.markSlotTaken(this.getSlotIndex());
+        public @NotNull ItemStack getItem() {
+            // 使用缓存的displayedItem而不是直接从inventory获取
+            return this.displayedItem;
         }
 
         @Override
         public void set(@NotNull ItemStack stack) {
-            super.set(stack);
-
             ICard currentCard = menu.getCurrentCard();
-            if (currentCard != null) {
-                int actualIndex = menu.getCurrentPage() * SLOT_SIZE + getSlotIndex();
+            if (currentCard == null) return;
 
-                // 确保当前卡片的库存被独立修改
-                NonNullList<ItemStack> inventory = currentCard.getInventory();
-                if (actualIndex >= 0 && actualIndex < inventory.size()) {
-                    ItemStack newStack = stack.copy();
-                    inventory.set(actualIndex, newStack);
+            int globalIndex = getGlobalIndex();
+            if (globalIndex >= 0 && globalIndex < currentCard.getInventory().size()) {
+                ItemStack newStack = stack.isEmpty() ? ItemStack.EMPTY : stack.copy();
+                currentCard.getInventory().set(globalIndex, newStack);
+                updateDisplayedItem(newStack);
+                setChanged();
 
-                    // 立即更新持久化存储
-                    if (!menu.getWorld().isClientSide() && menu.player.getServer() != null) {
-                        GlobalCardStorage storage = GlobalCardStorage.get(menu.player.getServer().overworld());
-                        storage.updateInventory(currentCard.getName(), inventory);
-                        storage.setDirty();
-                    }
-                }
+                // 保存到全局存储
+                menu.savePersistentData();
             }
+        }
 
-            menu.broadcastChanges();
+        @Override
+        public void setChanged() {
+            super.setChanged();
+            menu.syncDisplayInventory();
+        }
+
+        @Override
+        public @NotNull ItemStack remove(int amount) {
+            ItemStack currentItem = getItem();
+            if (currentItem.isEmpty()) return ItemStack.EMPTY;
+
+            ItemStack splitStack = currentItem.copy();
+            int actualAmount = Math.min(amount, currentItem.getCount());
+            splitStack.setCount(actualAmount);
+            currentItem.shrink(actualAmount);
+
+            set(currentItem); // 这会更新显示和保存
+            return splitStack;
+        }
+
+        public void updateDisplayedItem(ItemStack stack) {
+            this.displayedItem = stack.isEmpty() ? ItemStack.EMPTY : stack.copy();
+        }
+
+        private int getGlobalIndex() {
+            return menu.getCurrentPage() * CombatDepotMenu.SLOTS_PER_PAGE + slotIndex;
+        }
+
+        public int getSlotIndex() {
+            return slotIndex;
+        }
+
+        @Override
+        public boolean mayPickup(@NotNull Player player) {
+            return !getItem().isEmpty();
         }
     }
 }

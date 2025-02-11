@@ -14,6 +14,7 @@ import net.minecraftforge.network.NetworkEvent;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
+import top.bluecraft.combatdepot.common.inventory.Card;
 import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 import top.bluecraft.combatdepot.config.CardConfig;
 
@@ -34,16 +35,8 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
             // 将 NonnullList<ItemStack> 转换为 CompoundTag
             CompoundTag inventoryTag = new CompoundTag();
             ListTag itemsTag = new ListTag();
-            for (int i = 0; i < card.getInventory().size(); i++) {
-                ItemStack stack = card.getInventory().get(i);
-                if (!stack.isEmpty()) {
-                    CompoundTag itemTag = new CompoundTag();
-                    itemTag.putInt("Slot", i);
-                    stack.save(itemTag);
-                    itemsTag.add(itemTag);
-                }
-            }
-            inventoryTag.put("Items", itemsTag);
+            NonNullList<ItemStack> inventory = card.getInventory();
+            GlobalCardStorage.saveTags(inventory, inventoryTag, itemsTag);
             buffer.writeNbt(inventoryTag);
         });
 
@@ -65,11 +58,18 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
             CompoundTag inventoryTag = buffer.readNbt();
             NonNullList<ItemStack> inventory = NonNullList.withSize(inventorySize, ItemStack.EMPTY);
             if (inventoryTag != null) {
-                getList(inventoryTag, inventory);
+                ListTag itemsTag = inventoryTag.getList("Items", Tag.TAG_COMPOUND);
+                for (int i = 0; i < itemsTag.size(); i++) {
+                    CompoundTag itemTag = itemsTag.getCompound(i);
+                    int slot = itemTag.getInt("Slot");
+                    if (slot >= 0 && slot < inventory.size()) {
+                        inventory.set(slot, ItemStack.of(itemTag));
+                    }
+                }
             }
 
             // 创建卡片对象
-            return new CombatDepotMenu.Card(
+            return new Card(
                     new CardConfig.CardEntry() {
                         @Override
                         public ResourceLocation getTexture() {
@@ -85,6 +85,11 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
                         public int getInventorySize() {
                             return inventorySize;
                         }
+
+                        @Override
+                        public int getSlotPerPage() {
+                            return slotsPerPage;
+                        }
                     },
                     inventory
             );
@@ -95,32 +100,27 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
         return new SyncCardsPacket(cards, cardOffset);
     }
 
-    public static void getList(CompoundTag inventoryTag, NonNullList<ItemStack> inventory) {
-        ListTag itemsTag = inventoryTag.getList("Items", Tag.TAG_COMPOUND);
-        for (int i = 0; i < itemsTag.size(); i++) {
-            CompoundTag itemTag = itemsTag.getCompound(i);
-            int slot = itemTag.getInt("Slot");
-            if (slot >= 0 && slot < inventory.size()) {
-                inventory.set(slot, ItemStack.of(itemTag));
-            }
-        }
-    }
-
     public static void handle(SyncCardsPacket message, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
         context.enqueueWork(() -> {
             LocalPlayer player = Minecraft.getInstance().player;
             if (player != null && player.containerMenu instanceof CombatDepotMenu menu) {
-                // 更新客户端卡片数据
+                int currentSelectedIndex = menu.getSelectedCardIndex();
+                int currentPage = menu.getCurrentPage();
+
+                // 更新卡片数据
                 menu.setCards(message.cards());
-                // 更新卡片偏移量
                 menu.setCardOffset(message.cardOffset());
-                if (menu.getWorld() != null && !menu.getWorld().isClientSide()) {
-                    GlobalCardStorage storage = GlobalCardStorage.get((ServerLevel) menu.getPlayer().level());
-                    // 更新指定卡片的库存
-                    storage.updateInventory(menu.getCurrentCard().getName(), menu.getCurrentCard().getInventory());
-                    storage.setDirty(); // 确保标记为脏数据以保存
+
+                // 如果当前选中的卡片仍然有效，保持选择
+                if (currentSelectedIndex >= 0 && currentSelectedIndex < message.cards().size()) {
+                    // 重新加载当前页面数据
+                    menu.selectCard(currentSelectedIndex);
+                    menu.setPage(currentPage);
                 }
+
+                // 刷新显示
+                menu.syncDisplayInventory();
             }
         });
         context.setPacketHandled(true);

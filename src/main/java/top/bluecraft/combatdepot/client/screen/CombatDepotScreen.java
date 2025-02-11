@@ -16,6 +16,7 @@ import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.client.CardRenderer;
 import top.bluecraft.combatdepot.client.Colors;
 import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
+import top.bluecraft.combatdepot.network.UpdateCardSelectionMessage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -97,6 +98,8 @@ public class CombatDepotScreen extends AbstractContainerScreen<CombatDepotMenu> 
             currentCard = cards.get(newIndex);
             currentPageIndex = 0;
             menu.selectCard(newIndex);
+            // 发送卡片切换同步包
+            CombatDepot.PACKET_HANDLER.sendToServer(new UpdateCardSelectionMessage(newIndex));
             playSelectSound();
         }
     }

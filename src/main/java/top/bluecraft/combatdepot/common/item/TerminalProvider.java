@@ -20,6 +20,6 @@ public class TerminalProvider implements MenuProvider {
 
     @Override
     public AbstractContainerMenu createMenu(int id, @NotNull Inventory inventory, @NotNull Player player) {
-        return new CombatDepotMenu(id, inventory);
+        return new CombatDepotMenu(id, inventory, 0, 0);
     }
 }

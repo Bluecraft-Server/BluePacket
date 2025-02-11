@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
+import top.bluecraft.combatdepot.network.UpdatePageMessage;
 
 public class CardRenderer {
     public static final ResourceLocation BG_RESOURCE = new ResourceLocation(CombatDepot.MODID, "textures/gui/general.png");
@@ -56,29 +57,25 @@ public class CardRenderer {
         // 左箭头按钮
         screen.addRenderableWidget(Button.builder(Component.literal("<"), button -> {
                     if (menu.getCurrentPage() > 0) {
-                        menu.setPage(menu.getCurrentPage() - 1);
+                        int newPage = menu.getCurrentPage() - 1;
+                        menu.setPage(newPage);
+                        CombatDepot.PACKET_HANDLER.sendToServer(new UpdatePageMessage(newPage));
                     }
                 })
-                .pos(centerX - ARROW_SPACING - 10, arrowY - 10)  // 按钮位置，调整-10使按钮居中
-                .size(20, 20)  // 按钮大小
+                .pos(centerX - ARROW_SPACING - 10, arrowY - 10)
+                .size(20, 20)
                 .build());
-
 
         // 右箭头按钮
         screen.addRenderableWidget(Button.builder(Component.literal(">"), button -> {
                     if (menu.getCurrentPage() < card.getTotalPages() - 1) {
-                        menu.setPage(menu.getCurrentPage() + 1);
+                        int newPage = menu.getCurrentPage() + 1;
+                        menu.setPage(newPage);
+                        CombatDepot.PACKET_HANDLER.sendToServer(new UpdatePageMessage(newPage));
                     }
                 })
                 .pos(centerX + ARROW_SPACING - 10, arrowY - 10)
                 .size(20, 20)
                 .build());
-    }
-
-    private boolean isMouseOverArrow(double mouseX, double mouseY, int arrowX, int arrowY) {
-        // 增大点击判定区域以便于点击
-        int hitboxSize = 10;
-        return mouseX >= arrowX - hitboxSize && mouseX <= arrowX + hitboxSize &&
-                mouseY >= arrowY - hitboxSize && mouseY <= arrowY + hitboxSize;
     }
 }

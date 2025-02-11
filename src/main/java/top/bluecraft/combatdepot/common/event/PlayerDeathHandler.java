@@ -18,9 +18,9 @@ public class PlayerDeathHandler {
             // 当玩家死亡时，获取玩家的GunViewMenu（如果存在）
             if (player.containerMenu instanceof CombatDepotMenu menu) {
                 // 获取槽位标记
-                BitSet takenSlots = menu.getTakenSlots();
+                /*BitSet takenSlots = menu.getTakenSlots();
                 // 重置所有槽位标记
-                takenSlots.clear();
+                takenSlots.clear();*/
                 // 广播更改以同步到客户端
                 menu.broadcastChanges();
             }

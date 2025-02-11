@@ -9,6 +9,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
+import top.bluecraft.combatdepot.common.inventory.Card;
 import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 
 import java.io.File;
@@ -91,6 +92,7 @@ public class CardConfig {
         entry.name = name;
         entry.inventorySize = size;
         entry.texture = texture;
+        entry.slotPerPage = 110;
         return entry;
     }
 
@@ -102,7 +104,7 @@ public class CardConfig {
                 if (inventory == null) {
                     inventory = NonNullList.withSize(entry.getInventorySize(), ItemStack.EMPTY);
                 }
-                cards.add(new CombatDepotMenu.Card(entry, inventory));
+                cards.add(new Card(entry, inventory));
             }
         }
         return cards;
@@ -182,6 +184,7 @@ public class CardConfig {
         private boolean enabled;
         private String name;
         private int inventorySize;
+        private int slotPerPage;
         private String texture;
         private Map<String, String> translations;
         private NonNullList<ItemStack> inventory;
@@ -218,6 +221,10 @@ public class CardConfig {
 
         public int getInventorySize() {
             return inventorySize;
+        }
+
+        public int getSlotPerPage() {
+            return slotPerPage;
         }
 
         public void setInventorySize(int inventorySize) {

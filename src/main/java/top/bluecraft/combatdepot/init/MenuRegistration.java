@@ -11,5 +11,5 @@ import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 public class MenuRegistration {
     public static final DeferredRegister<MenuType<?>> REGISTRATION = DeferredRegister.create(ForgeRegistries.MENU_TYPES, CombatDepot.MODID);
 
-    public static final RegistryObject<MenuType<CombatDepotMenu>> GUN_VIEW_MENU = REGISTRATION.register("gun_view_menu", () -> new MenuType<>(CombatDepotMenu::new, FeatureFlags.DEFAULT_FLAGS));
+    public static final RegistryObject<MenuType<CombatDepotMenu>> GUN_VIEW_MENU = REGISTRATION.register("gun_view_menu", () -> new MenuType<>((id, inv) -> new CombatDepotMenu(id, inv, 0, 0), FeatureFlags.DEFAULT_FLAGS));
 }

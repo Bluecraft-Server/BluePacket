@@ -64,23 +64,27 @@ public class GlobalCardStorage extends SavedData {
             ListTag itemsList = new ListTag();
 
             // 保存每个槽位的物品
-            for (int i = 0; i < inventory.size(); i++) {
-                ItemStack stack = inventory.get(i);
-                if (!stack.isEmpty()) {
-                    CompoundTag slotTag = new CompoundTag();
-                    slotTag.putInt("Slot", i);
-                    stack.save(slotTag);
-                    itemsList.add(slotTag);
-                }
-            }
-
-            cardTag.put("Items", itemsList);
+            saveTags(inventory, cardTag, itemsList);
             cardTag.putInt("Size", inventory.size());
             cardsData.put(cardName, cardTag);
         });
 
         tag.put("Cards", cardsData);
         return tag;
+    }
+
+    public static void saveTags(NonNullList<ItemStack> inventory, CompoundTag cardTag, ListTag itemsList) {
+        for (int i = 0; i < inventory.size(); i++) {
+            ItemStack stack = inventory.get(i);
+            if (!stack.isEmpty()) {
+                CompoundTag slotTag = new CompoundTag();
+                slotTag.putInt("Slot", i);
+                stack.save(slotTag);
+                itemsList.add(slotTag);
+            }
+        }
+
+        cardTag.put("Items", itemsList);
     }
 
     public NonNullList<ItemStack> getInventory(String cardName) {

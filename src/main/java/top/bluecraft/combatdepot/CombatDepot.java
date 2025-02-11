@@ -32,9 +32,7 @@ import top.bluecraft.combatdepot.config.ConfigManager;
 import top.bluecraft.combatdepot.init.ItemRegistration;
 import top.bluecraft.combatdepot.init.MenuRegistration;
 import top.bluecraft.combatdepot.lang.CardLanguageManager;
-import top.bluecraft.combatdepot.network.AddItemToCardMessage;
-import top.bluecraft.combatdepot.network.SyncCardsPacket;
-import top.bluecraft.combatdepot.network.UpdateSlotMessage;
+import top.bluecraft.combatdepot.network.*;
 
 import java.io.File;
 import java.util.function.BiConsumer;
@@ -99,6 +97,8 @@ public class CombatDepot {
         configmanager.load();
         event.enqueueWork(
                 () -> {
+                    CombatDepot.addNetworkMessage(UpdateCardSelectionMessage.class, UpdateCardSelectionMessage::encode, UpdateCardSelectionMessage::decode, UpdateCardSelectionMessage::handle);
+                    CombatDepot.addNetworkMessage(UpdatePageMessage.class, UpdatePageMessage::encode, UpdatePageMessage::decode, UpdatePageMessage::handle);
                     CombatDepot.addNetworkMessage(AddItemToCardMessage.class, AddItemToCardMessage::encode, AddItemToCardMessage::decode, AddItemToCardMessage::handle);
                     CombatDepot.addNetworkMessage(SyncCardsPacket.class, SyncCardsPacket::encode, SyncCardsPacket::decode, SyncCardsPacket::handle);
                     CombatDepot.addNetworkMessage(UpdateSlotMessage.class, UpdateSlotMessage::encode, UpdateSlotMessage::decode, UpdateSlotMessage::handle);

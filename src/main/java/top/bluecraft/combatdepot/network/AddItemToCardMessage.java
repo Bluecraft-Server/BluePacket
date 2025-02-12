@@ -38,7 +38,7 @@ public class AddItemToCardMessage {
     public static void handle(AddItemToCardMessage message, Supplier<NetworkEvent.Context> context) {
         NetworkEvent.Context ctx = context.get();
         ctx.enqueueWork(() -> {
-            ServerPlayer player = context.get().getSender();
+            ServerPlayer player = ctx.getSender();
             if (player != null && player.containerMenu instanceof CombatDepotMenu menu) {
                 // 更新Card的实际inventory
                 ICard selectedCard = menu.getCards().stream()

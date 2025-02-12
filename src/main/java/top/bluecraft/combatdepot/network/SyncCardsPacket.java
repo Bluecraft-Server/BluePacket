@@ -9,6 +9,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
 import top.bluecraft.combatdepot.CombatDepot;
@@ -103,7 +104,7 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
     public static void handle(SyncCardsPacket message, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
         context.enqueueWork(() -> {
-            LocalPlayer player = Minecraft.getInstance().player;
+            ServerPlayer player = context.getSender();
             if (player != null && player.containerMenu instanceof CombatDepotMenu menu) {
                 int currentSelectedIndex = menu.getSelectedCardIndex();
                 int currentPage = menu.getCurrentPage();

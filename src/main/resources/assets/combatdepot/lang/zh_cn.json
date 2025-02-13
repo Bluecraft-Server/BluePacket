@@ -17,6 +17,8 @@
     "gui.combatdepot.card.item.config.search": "查找并添加物品栈",
     "gui.combatdepot.card.item.config.slot": "选择并添加或删除物品栈",
     "gui.combatdepot.card.edit.config": "编辑配置",
+    "gui.card.item.config.limit.set": "设置取出次数",
     "item.combatdepot.general_terminal": "通用终端",
+    "item.combatdepot.distribution_terminal": "分发终端",
     "tab.combatdepot.creativemodetab": "战斗仓库"
 }

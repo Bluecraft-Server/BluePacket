@@ -33,11 +33,34 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
             // 写入每页槽位数量
             buffer.writeVarInt(card.getSlotsPerPage());
 
-            // 将 NonnullList<ItemStack> 转换为 CompoundTag
+            // 创建并写入物品数据
             CompoundTag inventoryTag = new CompoundTag();
             ListTag itemsTag = new ListTag();
             NonNullList<ItemStack> inventory = card.getInventory();
-            GlobalCardStorage.saveTags(inventory, inventoryTag, itemsTag);
+            for (int i = 0; i < inventory.size(); i++) {
+                ItemStack stack = inventory.get(i);
+                if (!stack.isEmpty()) {
+                    CompoundTag slotTag = new CompoundTag();
+                    slotTag.putInt("Slot", i);
+                    stack.save(slotTag);
+                    itemsTag.add(slotTag);
+                }
+            }
+            inventoryTag.put("Items", itemsTag);
+
+            // 如果是Card类型，写入额外数据
+            if (card instanceof Card actualCard) {
+                // 写入取出限制数据
+                CompoundTag limitsTag = new CompoundTag();
+                actualCard.getRemainingCounts().forEach((slot, count) ->
+                        limitsTag.putInt(String.valueOf(slot), count));
+                inventoryTag.put("RemainingCounts", limitsTag);
+
+                // 写入剩余次数数据
+                CompoundTag extractionLimitsTag = actualCard.saveExtractionLimits();
+                inventoryTag.put("ExtractionLimits", extractionLimitsTag.getCompound("ExtractionLimits"));
+            }
+
             buffer.writeNbt(inventoryTag);
         });
 
@@ -55,45 +78,59 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
             // 读取每页槽位数量
             int slotsPerPage = buffer.readVarInt();
 
-            // 读取库存数据
+            // 读取NBT数据
             CompoundTag inventoryTag = buffer.readNbt();
             NonNullList<ItemStack> inventory = NonNullList.withSize(inventorySize, ItemStack.EMPTY);
-            if (inventoryTag != null) {
+
+            // 读取物品数据
+            if (inventoryTag != null && inventoryTag.contains("Items")) {
                 ListTag itemsTag = inventoryTag.getList("Items", Tag.TAG_COMPOUND);
                 for (int i = 0; i < itemsTag.size(); i++) {
-                    CompoundTag itemTag = itemsTag.getCompound(i);
-                    int slot = itemTag.getInt("Slot");
+                    CompoundTag slotTag = itemsTag.getCompound(i);
+                    int slot = slotTag.getInt("Slot");
                     if (slot >= 0 && slot < inventory.size()) {
-                        inventory.set(slot, ItemStack.of(itemTag));
+                        inventory.set(slot, ItemStack.of(slotTag));
                     }
                 }
             }
 
-            // 创建卡片对象
-            return new Card(
-                    new CardConfig.CardEntry() {
-                        @Override
-                        public ResourceLocation getTexture() {
-                            return new ResourceLocation(CombatDepot.MODID, "textures/gui/cards/" + name + ".png");
-                        }
+            // 创建卡片实例
+            Card card = new Card(new CardConfig.CardEntry() {
+                @Override
+                public String getName() {
+                    return name;
+                }
 
-                        @Override
-                        public String getName() {
-                            return name;
-                        }
+                @Override
+                public ResourceLocation getTexture() {
+                    return new ResourceLocation(CombatDepot.MODID, "textures/gui/cards/" + name + ".png");
+                }
 
-                        @Override
-                        public int getInventorySize() {
-                            return inventorySize;
-                        }
+                @Override
+                public int getInventorySize() {
+                    return inventorySize;
+                }
 
-                        @Override
-                        public int getSlotPerPage() {
-                            return slotsPerPage;
-                        }
-                    },
-                    inventory
-            );
+                @Override
+                public int getSlotPerPage() {
+                    return slotsPerPage;
+                }
+            }, inventory);
+
+            // 读取额外数据
+            if (inventoryTag != null) {
+                // 读取取出限制数据
+                if (inventoryTag.contains("ExtractionLimits")) {
+                    CompoundTag limitTag = new CompoundTag();
+                    limitTag.put("ExtractionLimits", inventoryTag.getCompound("ExtractionLimits"));
+                    card.loadExtractionLimits(limitTag);
+                }
+
+                // 读取剩余次数数据
+                GlobalCardStorage.readRemainingCounts(inventoryTag, card);
+            }
+
+            return card;
         });
 
         // 读取卡片偏移量

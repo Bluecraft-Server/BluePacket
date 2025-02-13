@@ -17,6 +17,8 @@
     "gui.combatdepot.card.item.config.search": "Find and add items",
     "gui.combatdepot.card.item.config.slot": "Select the itemstack and add or delete",
     "gui.combatdepot.card.edit.config": "Edit Config",
-    "item.combatdepot.general_terminal": "General Terminal",
+    "gui.card.item.config.limit.set": "Set Limit",
+    "item.combatdepot.distribution_terminal": "General Terminal",
+    "item.combatdepot.general_terminal": "Distribution Terminal",
     "tab.combatdepot.creativemodetab": "Combat Depot"
 }

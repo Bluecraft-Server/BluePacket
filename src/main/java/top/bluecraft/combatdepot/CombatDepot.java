@@ -49,6 +49,7 @@ public class CombatDepot {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
     public static final RegistryObject<CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("combat_depot_tab", () -> CreativeModeTab.builder().withTabsBefore(CreativeModeTabs.COMBAT).icon(ItemRegistration.GENERAL_TERMINAL.get()::getDefaultInstance).displayItems((parameters, output) -> {
         output.accept(ItemRegistration.GENERAL_TERMINAL.get());
+        output.accept(ItemRegistration.DISTRIBUTION_TERMINAL.get());
     }).title(Component.translatable("tab.combatdepot.creativemodetab")).build());
     public static final ConfigManager configmanager = new ConfigManager();
     private static final String PROTOCOL_VERSION = "1";

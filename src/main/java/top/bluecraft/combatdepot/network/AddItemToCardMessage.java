@@ -6,6 +6,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
 import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
+import top.bluecraft.combatdepot.common.inventory.Card;
 import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 
 import java.util.function.Supplier;
@@ -46,12 +47,12 @@ public class AddItemToCardMessage {
                         .findFirst()
                         .orElse(null);
 
-                if (selectedCard != null) {
+                if (selectedCard instanceof Card card) {
                     selectedCard.getInventory().set(message.slot, message.stack);
 
                     // 保存到GlobalCardStorage
                     GlobalCardStorage storage = GlobalCardStorage.get(player.serverLevel());
-                    storage.updateInventory(message.cardName, selectedCard.getInventory());
+                    storage.updateInventory(message.cardName, card);
                     storage.setDirty();
                 }
             }

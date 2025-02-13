@@ -14,7 +14,7 @@ public class ClientModEvents {
     @SubscribeEvent
     public static void clientLoad(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
-            MenuScreens.register(MenuRegistration.GUN_VIEW_MENU.get(), CombatDepotScreen::new);
+            MenuScreens.register(MenuRegistration.COMBAT_DEPOT_MENU.get(), CombatDepotScreen::new);
         });
     }
 }

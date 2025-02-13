@@ -16,6 +16,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
+import top.bluecraft.combatdepot.common.inventory.Card;
 import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 import top.bluecraft.combatdepot.network.AddItemToCardMessage;
 import top.bluecraft.combatdepot.network.SyncCardsPacket;
@@ -36,7 +37,8 @@ public class CardItemConfigScreen extends Screen {
     private final List<Slot> inventorySlots = new ArrayList<>();
     private EditBox itemInput;
     private EditBox countInput;
-    private EditBox deleteSlotInput;  // 新增：用于输入要删除的槽位索引
+    private EditBox deleteSlotInput;  // 输入要删除的槽位索引
+    private EditBox extractionLimitInput;
     private ConfigSlot itemSlot;
 
     public CardItemConfigScreen(CardEditScreen parentScreen, ICard card) {
@@ -72,7 +74,11 @@ public class CardItemConfigScreen extends Screen {
         int hotbarY = invStartY + 3 * (SLOT_SIZE + SLOT_SPACING) + 5;
         for (int col = 0; col < 9; col++) {
             int x = invStartX + col * (SLOT_SIZE + SLOT_SPACING);
-            inventorySlots.add(new Slot(minecraft.player.getInventory(), col, x, hotbarY));
+            if (minecraft != null) {
+                if (minecraft.player != null) {
+                    inventorySlots.add(new Slot(minecraft.player.getInventory(), col, x, hotbarY));
+                }
+            }
         }
 
         // 添加搜索框
@@ -118,14 +124,22 @@ public class CardItemConfigScreen extends Screen {
 
                             updateInventorySerialize();
                             deleteSlotInput.setValue("");
-                            minecraft.player.sendSystemMessage(Component.literal("物品已成功删除"));
+                            if (minecraft.player != null) {
+                                minecraft.player.sendSystemMessage(Component.literal("物品已成功删除"));
+                            }
                         } else {
-                            minecraft.player.sendSystemMessage(Component.literal("无效的槽位索引"));
+                            if (minecraft.player != null) {
+                                minecraft.player.sendSystemMessage(Component.literal("无效的槽位索引"));
+                            }
                         }
                     } catch (NumberFormatException e) {
-                        minecraft.player.sendSystemMessage(Component.literal("请输入有效的槽位索引数字"));
+                        if (minecraft.player != null) {
+                            minecraft.player.sendSystemMessage(Component.literal("请输入有效的槽位索引数字"));
+                        }
                     } catch (Exception e) {
-                        minecraft.player.sendSystemMessage(Component.literal("删除物品时发生错误"));
+                        if (minecraft.player != null) {
+                            minecraft.player.sendSystemMessage(Component.literal("删除物品时发生错误"));
+                        }
                     }
                 })
                 .pos(width / 2 - 10, height / 2 - 40)
@@ -181,6 +195,42 @@ public class CardItemConfigScreen extends Screen {
                 })
                 .pos(width / 2 + 85, height / 2 - 40)
                 .size(20, 20)
+                .build());
+
+        // 添加取出次数限制输入框
+        this.extractionLimitInput = new EditBox(font,
+                width / 2 + 20, height / 2, 60, 20,
+                Component.literal("extraction limit"));
+        this.extractionLimitInput.setSuggestion("limit");
+        addRenderableWidget(extractionLimitInput);
+
+        // 添加设置限制按钮
+        addRenderableWidget(Button.builder(Component.translatable("gui.card.item.config.limit.set"), button -> {
+                    try {
+                        int slotIndex = Integer.parseInt(deleteSlotInput.getValue());
+                        int limit = Integer.parseInt(extractionLimitInput.getValue());
+
+                        if (slotIndex >= 0 && slotIndex < card.getInventory().size()) {
+                            if (card instanceof Card actualCard) {
+                                actualCard.setExtractionLimit(slotIndex, limit);
+                                updateInventorySerialize();
+                                minecraft.player.sendSystemMessage(
+                                        Component.literal("Successfully set extraction limit to " + limit)
+                                );
+                            }
+                        } else {
+                            minecraft.player.sendSystemMessage(
+                                    Component.literal("Invalid slot index")
+                            );
+                        }
+                    } catch (NumberFormatException e) {
+                        minecraft.player.sendSystemMessage(
+                                Component.literal("Please enter valid numbers")
+                        );
+                    }
+                })
+                .pos(width / 2 + 85, height / 2)
+                .size(60, 20)
                 .build());
 
         // 返回按钮

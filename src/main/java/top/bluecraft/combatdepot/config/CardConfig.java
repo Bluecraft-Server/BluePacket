@@ -158,8 +158,9 @@ public class CardConfig {
     public void loadFromGlobalStorage(GlobalCardStorage storage) {
         for (CardEntry entry : entries) {
             if (entry.isEnabled()) {
-                // 从全局存储获取该卡片的物品栏
-                NonNullList<ItemStack> inventory = storage.getInventory(entry.getName());
+                // 从全局存储获取该卡片
+                Card storedCard = storage.getInventory(entry.getName());
+                NonNullList<ItemStack> inventory = storedCard.getInventory();
 
                 // 如果物品栏大小与配置不符，调整大小
                 if (inventory.size() != entry.getInventorySize()) {
@@ -173,8 +174,20 @@ public class CardConfig {
                         newInventory.set(i, inventory.get(i));
                     }
 
+                    // 创建新的Card实例并保持原有的限制数据
+                    Card newCard = new Card(entry, newInventory);
+
+                    // 复制取出限制和剩余次数数据
+                    for (int i = 0; i < Math.min(inventory.size(), entry.getInventorySize()); i++) {
+                        int limit = storedCard.getExtractionLimit(i);
+                        if (limit > 0) {
+                            newCard.setExtractionLimit(i, limit);
+                            newCard.setRemainingCount(i, storedCard.getRemainingCount(i));
+                        }
+                    }
+
                     // 更新存储
-                    storage.updateInventory(entry.getName(), newInventory);
+                    storage.updateInventory(entry.getName(), newCard);
                     entry.setInventory(newInventory);
                 } else {
                     entry.setInventory(inventory);
@@ -194,10 +207,15 @@ public class CardConfig {
 
 
         public ResourceLocation getTexture() {
-            if (texture.startsWith("file:///")) {
-                return new ResourceLocation("combatdepot", "textures/gui/cards/" + new File(texture.substring(8)).getName());
+            if (texture == null) {
+                // 提供默认纹理以防null
+                return new ResourceLocation(CombatDepot.MODID, "textures/gui/cards/default.png");
             }
-            return new ResourceLocation(texture);
+            if (texture.contains(":")) {
+                String[] parts = texture.split(":", 2);
+                return new ResourceLocation(parts[0], parts[1]);
+            }
+            return new ResourceLocation(CombatDepot.MODID, texture);
         }
 
         public void setTexture(String texture) {

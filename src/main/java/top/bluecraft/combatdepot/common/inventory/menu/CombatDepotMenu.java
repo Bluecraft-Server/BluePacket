@@ -1,7 +1,6 @@
 package top.bluecraft.combatdepot.common.inventory.menu;
 
 import net.minecraft.core.NonNullList;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
@@ -23,27 +22,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CombatDepotMenu extends AbstractContainerMenu {
-    private static final int PLAYER_INVENTORY_START_X = 220;
-    private static final int PLAYER_INVENTORY_START_Y = 111;
-    private static final int HOTBAR_START_Y = 169;
-    private static final int SLOT_SIZE = 18;
-    private static final int SLOTS_PER_PAGE = 110;
 
     private final Player player;
     private final Level world;
     private final List<ICard> cards;
-    private int selectedCardIndex = 0;
-    private int currentPage = 0;
+    private int selectedCardIndex;
+    private int currentPage;
     private int cardOffset = 0;
-    private final List<CardSlot> cardSlots = new ArrayList<>();
+    protected final List<CardSlot> cardSlots = new ArrayList<>();
 
-    // Slot ranges
-    private static final int CARD_INVENTORY_START = 0;
-    private static final int PLAYER_INVENTORY_START = SLOTS_PER_PAGE;
-    private static final int PLAYER_INVENTORY_END = PLAYER_INVENTORY_START + 36;
 
     public CombatDepotMenu(int windowId, Inventory playerInventory, int selectedCard, int page) {
-        super(MenuRegistration.GUN_VIEW_MENU.get(), windowId);
+        super(MenuRegistration.COMBAT_DEPOT_MENU.get(), windowId);
         this.player = playerInventory.player;
         this.world = player.level();
         this.selectedCardIndex = selectedCard;
@@ -65,13 +55,13 @@ public class CombatDepotMenu extends AbstractContainerMenu {
         updateCardSlots();
     }
 
-    private void initializeSlots(Inventory playerInventory) {
+    protected void initializeSlots(Inventory playerInventory) {
         // 添加卡片槽位
         for (int row = 0; row < 10; row++) {
             for (int col = 0; col < 11; col++) {
                 int index = col + row * 11;
-                int x = 10 + col * SLOT_SIZE;
-                int y = 10 + row * SLOT_SIZE;
+                int x = 10 + col * MenuConstants.SLOT_SIZE;
+                int y = 10 + row * MenuConstants.SLOT_SIZE;
                 CardSlot slot = new CardSlot(this, index, x, y);
                 cardSlots.add(slot);
                 addSlot(slot);
@@ -83,8 +73,8 @@ public class CombatDepotMenu extends AbstractContainerMenu {
             for (int col = 0; col < 9; col++) {
                 addSlot(new Slot(playerInventory,
                         col + (row + 1) * 9,
-                        PLAYER_INVENTORY_START_X + col * SLOT_SIZE,
-                        PLAYER_INVENTORY_START_Y + row * SLOT_SIZE));
+                        MenuConstants.PLAYER_INVENTORY_START_X + col * MenuConstants.SLOT_SIZE,
+                        MenuConstants.PLAYER_INVENTORY_START_Y + row * MenuConstants.SLOT_SIZE));
             }
         }
 
@@ -92,8 +82,8 @@ public class CombatDepotMenu extends AbstractContainerMenu {
         for (int col = 0; col < 9; col++) {
             addSlot(new Slot(playerInventory,
                     col,
-                    PLAYER_INVENTORY_START_X + col * SLOT_SIZE,
-                    HOTBAR_START_Y));
+                    MenuConstants.PLAYER_INVENTORY_START_X + col * MenuConstants.SLOT_SIZE,
+                    MenuConstants.HOTBAR_START_Y));
         }
     }
 
@@ -127,7 +117,7 @@ public class CombatDepotMenu extends AbstractContainerMenu {
         if (currentCard == null) return;
 
         NonNullList<ItemStack> inventory = currentCard.getInventory();
-        int startIndex = currentPage * SLOTS_PER_PAGE;
+        int startIndex = currentPage * MenuConstants.SLOTS_PER_PAGE;
 
         // 更新所有卡片槽位
         for (CardSlot slot : cardSlots) {
@@ -154,14 +144,14 @@ public class CombatDepotMenu extends AbstractContainerMenu {
             ItemStack stack = slot.getItem();
             itemstack = stack.copy();
 
-            if (index < PLAYER_INVENTORY_START) {
+            if (index < MenuConstants.PLAYER_INVENTORY_START) {
                 // Move from card inventory to player inventory
-                if (!this.moveItemStackTo(stack, PLAYER_INVENTORY_START, PLAYER_INVENTORY_END, true)) {
+                if (!this.moveItemStackTo(stack, MenuConstants.PLAYER_INVENTORY_START, MenuConstants.PLAYER_INVENTORY_END, true)) {
                     return ItemStack.EMPTY;
                 }
             } else {
                 // Move from player inventory to card inventory
-                if (!this.moveItemStackTo(stack, CARD_INVENTORY_START, PLAYER_INVENTORY_START, false)) {
+                if (!this.moveItemStackTo(stack, MenuConstants.CARD_INVENTORY_START, MenuConstants.PLAYER_INVENTORY_START, false)) {
                     return ItemStack.EMPTY;
                 }
             }
@@ -215,7 +205,7 @@ public class CombatDepotMenu extends AbstractContainerMenu {
     }
 
     public static int getSlotSize() {
-        return SLOTS_PER_PAGE;
+        return MenuConstants.SLOTS_PER_PAGE;
     }
 
     public void syncDisplayInventory() {
@@ -236,61 +226,13 @@ public class CombatDepotMenu extends AbstractContainerMenu {
         }
     }
 
-    // Inner classes
-    public static class Card implements ICard {
-        private final CardConfig.CardEntry entry;
-        private NonNullList<ItemStack> inventory;
-
-        public Card(CardConfig.CardEntry entry, NonNullList<ItemStack> inventory) {
-            this.entry = entry;
-            this.inventory = inventory;
-        }
-
-        @Override
-        public String getName() {
-            return entry.getName();
-        }
-
-        @Override
-        public NonNullList<ItemStack> getInventory() {
-            return inventory;
-        }
-
-        @Override
-        public void setInventory(NonNullList<ItemStack> inventory) {
-            this.inventory = inventory;
-        }
-
-        @Override
-        public List<ItemStack> getPageItems(int page) {
-            int startIndex = page * SLOTS_PER_PAGE;
-            int endIndex = Math.min(startIndex + SLOTS_PER_PAGE, inventory.size());
-            return inventory.subList(startIndex, endIndex);
-        }
-
-        @Override
-        public int getTotalPages() {
-            return (inventory.size() + SLOTS_PER_PAGE - 1) / SLOTS_PER_PAGE;
-        }
-
-        @Override
-        public int getSlotsPerPage() {
-            return SLOTS_PER_PAGE;
-        }
-
-        @Override
-        public ResourceLocation getTexture() {
-            return entry.getTexture();
-        }
-    }
-
-    private static class CardSlot extends Slot {
-        private final CombatDepotMenu menu;
-        private final int slotIndex;
-        private ItemStack displayedItem = ItemStack.EMPTY;
+    protected static class CardSlot extends Slot {
+        protected final CombatDepotMenu menu;
+        protected final int slotIndex;
+        protected ItemStack displayedItem = ItemStack.EMPTY;
 
         public CardSlot(CombatDepotMenu menu, int index, int x, int y) {
-            super(new Inventory(null) {
+            super(new Inventory(menu.player) {
                 @Override
                 public @NotNull ItemStack getItem(int slot) {
                     return ItemStack.EMPTY;
@@ -361,8 +303,8 @@ public class CombatDepotMenu extends AbstractContainerMenu {
             this.displayedItem = stack.isEmpty() ? ItemStack.EMPTY : stack.copy();
         }
 
-        private int getGlobalIndex() {
-            return menu.getCurrentPage() * CombatDepotMenu.SLOTS_PER_PAGE + slotIndex;
+        public int getGlobalIndex() {
+            return menu.getCurrentPage() * MenuConstants.SLOTS_PER_PAGE + slotIndex;
         }
 
         public int getSlotIndex() {

@@ -3,6 +3,7 @@ package top.bluecraft.combatdepot.config;
 import net.minecraft.resources.ResourceLocation;
 import top.bluecraft.combatdepot.CombatDepot;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AutoCardConfig {
@@ -19,6 +20,11 @@ public class AutoCardConfig {
         // 加载当前配置
         CardConfig config = CardConfig.load();
 
+        // 如果config为null，创建一个新的
+        if (config == null) {
+            config = new CardConfig();
+        }
+
         // 获取所有可用材质
         List<ResourceLocation> availableTextures = CardTextureLoader.getAvailableTextures();
 
@@ -30,8 +36,11 @@ public class AutoCardConfig {
                     .substring(texture.getPath().lastIndexOf('/') + 1);
 
             // 检查这个卡片是否已经存在于配置中
-            boolean exists = config.getEntries().stream()
-                    .anyMatch(card -> card.getName().equals(cardName));
+            boolean exists = false;
+            if (config.getEntries() != null) {
+                exists = config.getEntries().stream()
+                        .anyMatch(card -> card.getName().equals(cardName));
+            }
 
             if (!exists) {
                 // 创建新的卡片配置
@@ -42,6 +51,9 @@ public class AutoCardConfig {
                 newCard.setTexture(texture.getNamespace() + ":" + texture.getPath());
 
                 // 添加到配置中
+                if (config.getEntries() == null) {
+                    config.setEntries(new ArrayList<>());
+                }
                 config.getEntries().add(newCard);
                 configChanged = true;
 

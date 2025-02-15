@@ -3,6 +3,7 @@ package top.bluecraft.combatdepot.common.inventory.menu;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -51,8 +52,55 @@ public class DistributionMenu extends CombatDepotMenu {
     }
 
     @Override
+    public boolean moveItemStackTo(ItemStack stack, int startIndex, int endIndex, boolean reverseDirection) {
+        if (!stack.isEmpty()) {
+            return super.moveItemStackTo(stack.copy(), startIndex, endIndex, reverseDirection);
+        }
+        return false;
+    }
+
+    @Override
+    public void clicked(int slotId, int dragType, @NotNull ClickType clickType, @NotNull Player player) {
+        if (slotId >= 0 && slotId < this.slots.size()) {
+            Slot slot = this.slots.get(slotId);
+
+            // 处理快捷键点击
+            if (clickType == ClickType.SWAP && slot instanceof DistributionCardSlot) {
+                if (dragType >= 0 && dragType < 9) {  // 数字键 1-9
+                    // 获取快捷栏槽位
+                    Slot hotbarSlot = this.slots.get(this.slots.size() - (9 - dragType));
+
+                    // 检查是否可以取出
+                    if (slot.mayPickup(player)) {
+                        ItemStack slotStack = slot.getItem();
+                        if (!slotStack.isEmpty()) {
+                            ItemStack copy = slotStack.copy();
+                            copy.setCount(Math.min(copy.getMaxStackSize(), copy.getCount()));
+
+                            // 设置到快捷栏
+                            hotbarSlot.set(copy);
+
+                            // 如果不是管理员，减少剩余次数
+                            if (!player.hasPermissions(2) && slot instanceof DistributionCardSlot distributionSlot) {
+                                ICard card = getCurrentCard();
+                                if (card instanceof Card card1) {
+                                    card1.decrementRemainingCount(distributionSlot.getGlobalIndex());
+                                }
+                            }
+                        }
+                    }
+                    return;
+                }
+            }
+        }
+
+        // 其他点击类型使用默认处理
+        super.clicked(slotId, dragType, clickType, player);
+    }
+
+    @Override
     public @NotNull ItemStack quickMoveStack(@NotNull Player player, int index) {
-        ItemStack itemstack = ItemStack.EMPTY;
+        ItemStack itemstack;
         Slot slot = this.slots.get(index);
 
         if (slot.hasItem()) {

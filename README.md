@@ -1,4 +1,4 @@
-# Combat Depot - 一个自定义发放物品的库
+<h1 align="center">Combat Depot - 一个自定义发放物品的库</h1>
 
 <br>
 

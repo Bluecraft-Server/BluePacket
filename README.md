@@ -3,15 +3,15 @@
 <br>
 
 <div align="center">
-    <img width="150px" src="./img/logo.png" align="center" alt="Logo" />
+    <img width="125rem" src="./img/logo.png" align="center" alt="Logo" />
     <h2 align="center">Combat Depot</h2>
     <p align="center">一个可自定义化的物品浏览器，依靠外部存储来自定义化你的物品发放系统。</p>
 
-<a href="https://qm.qq.com/q/UTIXXOqOEq" target="_blank">
-  <img src="https://img.shields.io/badge/778454105-4285F4?style=for-the-badge&logo=qq&logoColor=white" 
-       alt="加入 QQ 开发群组"
-       style="border: none;">
-</a>
+    <a href="https://qm.qq.com/q/UTIXXOqOEq" target="_blank">
+        <img src="https://img.shields.io/badge/778454105-4285F4?style=for-the-badge&logo=qq&logoColor=white" 
+            alt="加入 QQ 开发群组"
+            style="border: none;">
+    </a>
 </div>
 
 <!-- [![QQ Group](https://img.shields.io/badge/778454105-4285F4?style=for-the-badge&logo=qq&logoColor=white)](https://qm.qq.com/q/UTIXXOqOEq) -->
@@ -111,10 +111,10 @@
 
 ## 📞 联系我们​
 
-如果你在使用过程中遇到任何问题,或者有好的建议,欢迎通过以下方式联系:
+如果你在使用过程中遇到任何问题，或者有好的建议，欢迎通过以下方式联系:
 
-* 我们的开发组QQ群: 778454105
-* 主要负责人QQ号：2149720295
+* 我们的开发组 QQ 群: `778454105`
+* 主要负责人 QQ 号：`2149720295`
 
 ## 💡 计划功能​
 
@@ -125,8 +125,8 @@
 
 ## ❔ 如何下载​
 
-1. 在我们的 GitHub 仓库里，找到工作流（Actions）
-2. 注意右边工作流末尾的分支，那是你想要下载的mod的游戏版本，例如：`1.20.1-Forge`
+1. 在我们的 GitHub 仓库里，找到工作流（[Actions](https://github.com/Bluecraft-Server/CombatDepot/actions)）
+2. 注意右边工作流末尾的分支，那是你想要下载的 Mod 的游戏版本，例如：`1.20.1-Forge`
 3. 每次我们 push 的时候，都会在工作流部署一个构建版本，你只需要点击最新版本就行
 4. 点击对应工作流后，下面的 Artifacts 工件就是你要下载的部署的版本了
 5. 下载后的名称是部署时自动生成的，如果你需要重命名请把 “BM-Updater” 重命名成 Mod 名称就行

@@ -127,7 +127,7 @@ jobs:
             ```text
             SHA:    ${{ github.sha }}
             作者:    ${{ github.event.head_commit.author.name || 'N/A' }}
-            时间:    ${{ fromJSON(format('{{ "ts": {0} }}', github.event.head_commit.timestamp)).ts || env.BUILD_TIME }}
+            时间:    ${{ github.event.head_commit.timestamp || env.BUILD_TIME }}
             消息:    ${{ github.event.head_commit.message || 'No commit message' }}
             ```
 

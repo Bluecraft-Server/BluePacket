@@ -7,11 +7,11 @@
     <h2 align="center">Combat Depot</h2>
     <p align="center">一个可自定义化的物品浏览器，依靠外部存储来自定义化你的物品发放系统。</p>
 
-    <a href="https://qm.qq.com/q/UTIXXOqOEq" target="_blank">
-        <img src="https://img.shields.io/badge/778454105-4285F4?style=for-the-badge&logo=qq&logoColor=white" 
-            alt="加入 QQ 开发群组"
-            style="border: none;">
-    </a>
+<a href="https://qm.qq.com/q/UTIXXOqOEq" target="_blank">
+    <img src="https://img.shields.io/badge/778454105-4285F4?style=for-the-badge&logo=qq&logoColor=white" 
+        alt="加入 QQ 开发群组"
+        style="border: none;">
+</a>
 </div>
 
 <!-- [![QQ Group](https://img.shields.io/badge/778454105-4285F4?style=for-the-badge&logo=qq&logoColor=white)](https://qm.qq.com/q/UTIXXOqOEq) -->

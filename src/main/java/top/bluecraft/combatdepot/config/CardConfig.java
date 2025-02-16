@@ -25,7 +25,7 @@ import static top.bluecraft.combatdepot.CombatDepot.CONFIGDIR;
 
 
 public class CardConfig {
-    public static final String CONFIG_FILE = "cards.json";
+    public static String CONFIG_FILE = "cards.json";
 
     public boolean disableDefaultCards;
     public List<CardEntry> entries;
@@ -41,6 +41,11 @@ public class CardConfig {
         }
 
         try (JsonReader jsonReader = new JsonReader(new FileReader(configFile))) {
+            if (jsonReader.toString().isEmpty()) {
+                CardConfig defaultConfig = createDefaultConfig();
+                save(defaultConfig);
+                return defaultConfig;
+            }
             return new Gson().fromJson(jsonReader, CardConfig.class);
         } catch (Exception e) {
             CombatDepot.LOGGER.error("Failed to load card config", e);
@@ -51,21 +56,18 @@ public class CardConfig {
     // 保存配置
     public static void save(CardConfig config) {
         Path configDir = FMLPaths.CONFIGDIR.get().resolve(CombatDepot.MODID);
-
         File configFile = new File(CONFIGDIR, CONFIG_FILE);
 
         try {
             Files.createDirectories(configDir);
-            try {
-                FileWriter writer = new FileWriter(configFile);
-                writer.write(new Gson().toJson(config));
-                writer.close();
+            try (FileWriter writer = new FileWriter(configFile)) {
+                new Gson().toJson(config, writer);
+                CombatDepot.LOGGER.info("配置已成功保存到: {}", configFile.getAbsolutePath());
             } catch (Exception e) {
-                CombatDepot.LOGGER.error("Failed to save card config: ", e);
+                CombatDepot.LOGGER.error("保存配置文件时发生错误: ", e);
             }
-
         } catch (Exception e) {
-            CombatDepot.LOGGER.error("Failed to save card config", e);
+            CombatDepot.LOGGER.error("创建配置目录时发生错误: ", e);
         }
     }
 
@@ -197,13 +199,13 @@ public class CardConfig {
     }
 
     public static class CardEntry {
-        private boolean enabled;
-        private String name;
-        private int inventorySize;
-        private int slotPerPage;
-        private String texture;
-        private Map<String, String> translations;
-        private NonNullList<ItemStack> inventory;
+        public boolean enabled;
+        public String name;
+        public int inventorySize;
+        public int slotPerPage;
+        public String texture;
+        public Map<String, String> translations;
+        public NonNullList<ItemStack> inventory;
 
 
         public ResourceLocation getTexture() {

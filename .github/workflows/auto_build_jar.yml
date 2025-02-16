@@ -74,7 +74,7 @@ jobs:
         if: env.SKIP_BUILD == 'false'
         id: rename_file
         run: |
-          TARGET_JAR="BluePacket-${{ env.VERSION }}.jar"
+          TARGET_JAR="CombatDepot-${{ env.VERSION }}.jar"
           SOURCE_JAR=$(find build/libs -name "*.jar" -print -quit)
           echo "FINAL_JAR_NAME=BluePacket-${{ env.VERSION }}" >> $GITHUB_ENV
           mv "${SOURCE_JAR}" "${TARGET_JAR}"

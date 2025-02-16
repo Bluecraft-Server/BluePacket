@@ -19,17 +19,91 @@ public class Card implements ICard {
     private final ResourceLocation texture;
     private NonNullList<ItemStack> inventory;
 
-    // 存储每个槽位的取出次数限制
-    private final Map<Integer, Integer> extractionLimits = new HashMap<>();
-
-    // 存储每个槽位的剩余取出次数
-    private final Map<Integer, Integer> remainingCounts = new HashMap<>();
-
     public Card(CardConfig.CardEntry entry, NonNullList<ItemStack> inventory) {
         this.name = entry.getName();
         this.inventory = inventory;
         this.slotsPerPage = 110;
         this.texture = entry.getTexture();
+    }
+
+    private final Map<Integer, Integer> extractionLimits = new HashMap<>();
+    private final Map<Integer, Integer> remainingCounts = new HashMap<>();
+
+    public boolean canExtract(int slotIndex) {
+        if (!extractionLimits.containsKey(slotIndex)) {
+            return true; // 如果没有设置限制，则允许提取
+        }
+        int remaining = remainingCounts.getOrDefault(slotIndex, extractionLimits.get(slotIndex));
+        return remaining > 0;
+    }
+
+    public void setExtractionLimit(int slotIndex, int limit) {
+        if (limit <= 0) {
+            extractionLimits.remove(slotIndex);
+            remainingCounts.remove(slotIndex);
+        } else {
+            extractionLimits.put(slotIndex, limit);
+            remainingCounts.put(slotIndex, limit); // 重置剩余次数
+        }
+    }
+
+    public void decrementRemainingCount(int slotIndex) {
+        if (extractionLimits.containsKey(slotIndex)) {
+            int remaining = remainingCounts.getOrDefault(slotIndex, extractionLimits.get(slotIndex));
+            if (remaining > 0) {
+                remainingCounts.put(slotIndex, remaining - 1);
+            }
+        }
+    }
+
+    public int getExtractionLimit(int slotIndex) {
+        return extractionLimits.getOrDefault(slotIndex, 0);
+    }
+
+    public int getRemainingCount(int slotIndex) {
+        return remainingCounts.getOrDefault(slotIndex, 0);
+    }
+
+    // 添加 NBT 序列化支持
+    public CompoundTag serializeNBT() {
+        CompoundTag tag = new CompoundTag();
+
+        // 序列化提取限制
+        CompoundTag limitsTag = new CompoundTag();
+        for (Map.Entry<Integer, Integer> entry : extractionLimits.entrySet()) {
+            limitsTag.putInt(String.valueOf(entry.getKey()), entry.getValue());
+        }
+        tag.put("ExtractionLimits", limitsTag);
+
+        // 序列化剩余次数
+        CompoundTag remainingTag = new CompoundTag();
+        for (Map.Entry<Integer, Integer> entry : remainingCounts.entrySet()) {
+            remainingTag.putInt(String.valueOf(entry.getKey()), entry.getValue());
+        }
+        tag.put("RemainingCounts", remainingTag);
+
+        return tag;
+    }
+
+    public void deserializeNBT(CompoundTag tag) {
+        extractionLimits.clear();
+        remainingCounts.clear();
+
+        if (tag.contains("ExtractionLimits")) {
+            CompoundTag limitsTag = tag.getCompound("ExtractionLimits");
+            for (String key : limitsTag.getAllKeys()) {
+                int slot = Integer.parseInt(key);
+                extractionLimits.put(slot, limitsTag.getInt(key));
+            }
+        }
+
+        if (tag.contains("RemainingCounts")) {
+            CompoundTag remainingTag = tag.getCompound("RemainingCounts");
+            for (String key : remainingTag.getAllKeys()) {
+                int slot = Integer.parseInt(key);
+                remainingCounts.put(slot, remainingTag.getInt(key));
+            }
+        }
     }
 
     @Override
@@ -78,33 +152,6 @@ public class Card implements ICard {
         return texture;
     }
 
-    // 取出限制相关方法
-    public void setExtractionLimit(int slot, int limit) {
-        if (limit <= 0) {
-            extractionLimits.remove(slot);
-            remainingCounts.remove(slot);
-        } else {
-            extractionLimits.put(slot, limit);
-            // 设置新的限制时，重置剩余次数
-            remainingCounts.put(slot, limit);
-        }
-    }
-
-    public int getExtractionLimit(int slot) {
-        return extractionLimits.getOrDefault(slot, -1); // -1 表示无限制
-    }
-
-    public CompoundTag saveExtractionLimits() {
-        CompoundTag tag = new CompoundTag();
-        CompoundTag limitsTag = new CompoundTag();
-
-        for (Map.Entry<Integer, Integer> entry : extractionLimits.entrySet()) {
-            limitsTag.putInt(String.valueOf(entry.getKey()), entry.getValue());
-        }
-
-        tag.put("ExtractionLimits", limitsTag);
-        return tag;
-    }
 
     public void loadExtractionLimits(CompoundTag tag) {
         extractionLimits.clear();
@@ -131,13 +178,6 @@ public class Card implements ICard {
         return new HashMap<>(remainingCounts);
     }
 
-    public int getRemainingCount(int slot) {
-        int limit = getExtractionLimit(slot);
-        if (limit <= 0) {
-            return -1; // 无限制
-        }
-        return remainingCounts.getOrDefault(slot, limit);
-    }
 
     public void setRemainingCount(int slot, int count) {
         int limit = getExtractionLimit(slot);
@@ -156,21 +196,6 @@ public class Card implements ICard {
         remainingCounts.putAll(extractionLimits);
     }
 
-    public void decrementRemainingCount(int slot) {
-        int currentCount = getRemainingCount(slot);
-        if (currentCount > 0) { // 只在有限制且还有剩余次数时减少
-            setRemainingCount(slot, currentCount - 1);
-        }
-    }
-
-    public boolean canExtract(int slot) {
-        int limit = getExtractionLimit(slot);
-        if (limit <= 0) {
-            return true; // 无限制
-        }
-        int remaining = getRemainingCount(slot);
-        return remaining > 0;
-    }
 
     public boolean isSlotLimited(int slot) {
         return getExtractionLimit(slot) > 0;

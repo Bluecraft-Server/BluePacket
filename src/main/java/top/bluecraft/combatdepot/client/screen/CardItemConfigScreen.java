@@ -146,7 +146,7 @@ public class CardItemConfigScreen extends Screen {
                 .size(20, 20)
                 .build());
 
-        if (this.minecraft.player.containerMenu instanceof CombatDepotMenu menu) {
+        if (this.minecraft.player != null && this.minecraft.player.containerMenu instanceof CombatDepotMenu menu) {
             this.itemSlot = new ConfigSlot(width / 2 - 100, height / 2 - 40, 0, this.font, menu);
         }
 

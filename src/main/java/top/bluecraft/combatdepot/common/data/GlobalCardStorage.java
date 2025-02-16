@@ -12,13 +12,11 @@ import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.common.inventory.Card;
 import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 import top.bluecraft.combatdepot.config.CardConfig;
-import top.bluecraft.combatdepot.network.SyncCardsPacket;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class GlobalCardStorage extends SavedData {
-    // 存储每个卡片名称对应的物品栏数据
     private final Map<String, Card> cardInventories = new HashMap<>();
 
     public static GlobalCardStorage load(CompoundTag tag) {
@@ -35,6 +33,7 @@ public class GlobalCardStorage extends SavedData {
                 // 创建卡片配置
                 CardConfig.CardEntry entry = new CardConfig.CardEntry();
                 entry.setName(cardName);
+                entry.setTexture(CombatDepot.MODID + ":textures/gui/cards/" + cardName + ".png");
 
                 // 读取基本数据
                 int size = cardTag.getInt("Size");
@@ -53,13 +52,10 @@ public class GlobalCardStorage extends SavedData {
                     }
                 }
 
-                // 加载取出限制数据
-                if (cardTag.contains("ExtractionLimits")) {
-                    card.loadExtractionLimits(cardTag.getCompound("ExtractionLimits"));
+                // 加载提取限制数据
+                if (cardTag.contains("ExtractionData")) {
+                    card.deserializeNBT(cardTag.getCompound("ExtractionData"));
                 }
-
-                // 加载剩余数量数据
-                readRemainingCounts(cardTag, card);
 
                 storage.cardInventories.put(cardName, card);
             }
@@ -91,14 +87,8 @@ public class GlobalCardStorage extends SavedData {
             cardTag.put("Items", itemsList);
             cardTag.putInt("Size", inventory.size());
 
-            // 保存取出限制数据
-            cardTag.put("ExtractionLimits", card.saveExtractionLimits());
-
-            // 保存剩余数量数据
-            CompoundTag remainingTag = new CompoundTag();
-            card.getRemainingCounts().forEach((slot, count) ->
-                    remainingTag.putInt(String.valueOf(slot), count));
-            cardTag.put("RemainingCounts", remainingTag);
+            // 保存提取限制数据
+            cardTag.put("ExtractionData", card.serializeNBT());
 
             cardsData.put(cardName, cardTag);
         });

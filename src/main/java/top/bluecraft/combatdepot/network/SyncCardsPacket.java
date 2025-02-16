@@ -1,20 +1,16 @@
 package top.bluecraft.combatdepot.network;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
-import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.common.inventory.Card;
 import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 import top.bluecraft.combatdepot.config.CardConfig;
@@ -26,16 +22,16 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
     public static void encode(SyncCardsPacket msg, FriendlyByteBuf buf) {
         // 写入卡片列表
         buf.writeCollection(msg.cards(), (buffer, card) -> {
-            // 写入卡片名称
+            // 写入卡片基本信息
             buffer.writeUtf(card.getName());
-            // 写入库存大小
             buffer.writeVarInt(card.getInventory().size());
-            // 写入每页槽位数量
             buffer.writeVarInt(card.getSlotsPerPage());
 
-            // 创建并写入物品数据
-            CompoundTag inventoryTag = new CompoundTag();
-            ListTag itemsTag = new ListTag();
+            // 写入物品数据和限制数据
+            CompoundTag cardTag = new CompoundTag();
+
+            // 保存物品数据
+            ListTag itemsList = new ListTag();
             NonNullList<ItemStack> inventory = card.getInventory();
             for (int i = 0; i < inventory.size(); i++) {
                 ItemStack stack = inventory.get(i);
@@ -43,25 +39,17 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
                     CompoundTag slotTag = new CompoundTag();
                     slotTag.putInt("Slot", i);
                     stack.save(slotTag);
-                    itemsTag.add(slotTag);
+                    itemsList.add(slotTag);
                 }
             }
-            inventoryTag.put("Items", itemsTag);
+            cardTag.put("Items", itemsList);
 
-            // 如果是Card类型，写入额外数据
+            // 如果是Card实例，保存提取限制数据
             if (card instanceof Card actualCard) {
-                // 写入取出限制数据
-                CompoundTag limitsTag = new CompoundTag();
-                actualCard.getRemainingCounts().forEach((slot, count) ->
-                        limitsTag.putInt(String.valueOf(slot), count));
-                inventoryTag.put("RemainingCounts", limitsTag);
-
-                // 写入剩余次数数据
-                CompoundTag extractionLimitsTag = actualCard.saveExtractionLimits();
-                inventoryTag.put("ExtractionLimits", extractionLimitsTag.getCompound("ExtractionLimits"));
+                cardTag.put("ExtractionData", actualCard.serializeNBT());
             }
 
-            buffer.writeNbt(inventoryTag);
+            buffer.writeNbt(cardTag);
         });
 
         // 写入卡片偏移量
@@ -71,22 +59,20 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
     public static SyncCardsPacket decode(FriendlyByteBuf buf) {
         // 读取卡片列表
         List<ICard> cards = buf.readList(buffer -> {
-            // 读取卡片名称
+            // 读取基本信息
             String name = buffer.readUtf();
-            // 读取库存大小
             int inventorySize = buffer.readVarInt();
-            // 读取每页槽位数量
             int slotsPerPage = buffer.readVarInt();
 
             // 读取NBT数据
-            CompoundTag inventoryTag = buffer.readNbt();
+            CompoundTag cardTag = buffer.readNbt();
             NonNullList<ItemStack> inventory = NonNullList.withSize(inventorySize, ItemStack.EMPTY);
 
             // 读取物品数据
-            if (inventoryTag != null && inventoryTag.contains("Items")) {
-                ListTag itemsTag = inventoryTag.getList("Items", Tag.TAG_COMPOUND);
-                for (int i = 0; i < itemsTag.size(); i++) {
-                    CompoundTag slotTag = itemsTag.getCompound(i);
+            if (cardTag != null && cardTag.contains("Items")) {
+                ListTag itemsList = cardTag.getList("Items", Tag.TAG_COMPOUND);
+                for (int i = 0; i < itemsList.size(); i++) {
+                    CompoundTag slotTag = itemsList.getCompound(i);
                     int slot = slotTag.getInt("Slot");
                     if (slot >= 0 && slot < inventory.size()) {
                         inventory.set(slot, ItemStack.of(slotTag));
@@ -94,8 +80,8 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
                 }
             }
 
-            // 创建卡片实例
-            Card card = new Card(new CardConfig.CardEntry() {
+            // 创建卡片配置
+            CardConfig.CardEntry entry = new CardConfig.CardEntry() {
                 @Override
                 public String getName() {
                     return name;
@@ -115,19 +101,14 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
                 public int getSlotPerPage() {
                     return slotsPerPage;
                 }
-            }, inventory);
+            };
 
-            // 读取额外数据
-            if (inventoryTag != null) {
-                // 读取取出限制数据
-                if (inventoryTag.contains("ExtractionLimits")) {
-                    CompoundTag limitTag = new CompoundTag();
-                    limitTag.put("ExtractionLimits", inventoryTag.getCompound("ExtractionLimits"));
-                    card.loadExtractionLimits(limitTag);
-                }
+            // 创建卡片实例
+            Card card = new Card(entry, inventory);
 
-                // 读取剩余次数数据
-                GlobalCardStorage.readRemainingCounts(inventoryTag, card);
+            // 读取提取限制数据
+            if (cardTag != null && cardTag.contains("ExtractionData")) {
+                card.deserializeNBT(cardTag.getCompound("ExtractionData"));
             }
 
             return card;
@@ -152,7 +133,6 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
 
                 // 如果当前选中的卡片仍然有效，保持选择
                 if (currentSelectedIndex >= 0 && currentSelectedIndex < message.cards().size()) {
-                    // 重新加载当前页面数据
                     menu.selectCard(currentSelectedIndex);
                     menu.setPage(currentPage);
                 }

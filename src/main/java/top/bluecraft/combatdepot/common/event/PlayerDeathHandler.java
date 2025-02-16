@@ -7,8 +7,6 @@ import net.minecraftforge.fml.common.Mod;
 import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 
-import java.util.BitSet;
-
 @Mod.EventBusSubscriber(modid = CombatDepot.MODID)
 public class PlayerDeathHandler {
 

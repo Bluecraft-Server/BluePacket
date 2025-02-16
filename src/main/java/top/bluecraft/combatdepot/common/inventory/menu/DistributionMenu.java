@@ -14,8 +14,10 @@ import top.bluecraft.combatdepot.common.inventory.Card;
 import top.bluecraft.combatdepot.config.Config;
 
 public class DistributionMenu extends CombatDepotMenu {
+    private final Player player;
     public DistributionMenu(int windowId, Inventory playerInventory, int selectedCard, int page) {
         super(windowId, playerInventory, selectedCard, page);
+        this.player = playerInventory.player;
     }
 
     @Override
@@ -51,14 +53,41 @@ public class DistributionMenu extends CombatDepotMenu {
         }
     }
 
+    // 在 DistributionMenu.java 中添加
     @Override
     public boolean moveItemStackTo(ItemStack stack, int startIndex, int endIndex, boolean reverseDirection) {
-        if (!stack.isEmpty()) {
-            return super.moveItemStackTo(stack.copy(), startIndex, endIndex, reverseDirection);
+        // 检查是否从分发槽位移动到玩家物品栏
+        if (startIndex < MenuConstants.SLOTS_PER_PAGE) {
+            if (!player.hasPermissions(2)) {
+                Slot slot = this.slots.get(startIndex);
+                if (slot instanceof DistributionCardSlot distributionSlot) {
+                    ICard card = getCurrentCard();
+                    if (card instanceof Card card1) {
+                        if (!card1.canExtract(distributionSlot.getGlobalIndex())) {
+                            return false;
+                        }
+                        // 如果可以移动，在成功移动后减少次数
+                        boolean moved = super.moveItemStackTo(stack, startIndex, endIndex, reverseDirection);
+                        if (moved) {
+                            card1.decrementRemainingCount(distributionSlot.getGlobalIndex());
+                            // 保存数据
+                            if (!getWorld().isClientSide()) {
+                                GlobalCardStorage storage = GlobalCardStorage.get((ServerLevel) getWorld());
+                                storage.updateInventory(card.getName(), card1);
+                                storage.setDirty();
+                                // 同步到客户端
+                                syncDisplayInventory();
+                            }
+                        }
+                        return moved;
+                    }
+                }
+            }
         }
-        return false;
+        return super.moveItemStackTo(stack, startIndex, endIndex, reverseDirection);
     }
 
+    // 添加快捷栏处理逻辑
     @Override
     public void clicked(int slotId, int dragType, @NotNull ClickType clickType, @NotNull Player player) {
         if (slotId >= 0 && slotId < this.slots.size()) {
@@ -67,34 +96,19 @@ public class DistributionMenu extends CombatDepotMenu {
             // 处理快捷键点击
             if (clickType == ClickType.SWAP && slot instanceof DistributionCardSlot) {
                 if (dragType >= 0 && dragType < 9) {  // 数字键 1-9
-                    // 获取快捷栏槽位
-                    Slot hotbarSlot = this.slots.get(this.slots.size() - (9 - dragType));
-
-                    // 检查是否可以取出
-                    if (slot.mayPickup(player)) {
-                        ItemStack slotStack = slot.getItem();
-                        if (!slotStack.isEmpty()) {
-                            ItemStack copy = slotStack.copy();
-                            copy.setCount(Math.min(copy.getMaxStackSize(), copy.getCount()));
-
-                            // 设置到快捷栏
-                            hotbarSlot.set(copy);
-
-                            // 如果不是管理员，减少剩余次数
-                            if (!player.hasPermissions(2) && slot instanceof DistributionCardSlot distributionSlot) {
-                                ICard card = getCurrentCard();
-                                if (card instanceof Card card1) {
-                                    card1.decrementRemainingCount(distributionSlot.getGlobalIndex());
-                                }
+                    if (!player.hasPermissions(2)) {
+                        // 非管理员需要检查限制
+                        ICard card = getCurrentCard();
+                        if (card instanceof Card card1) {
+                            int globalIndex = ((DistributionCardSlot)slot).getGlobalIndex();
+                            if (!card1.canExtract(globalIndex)) {
+                                return;
                             }
                         }
                     }
-                    return;
                 }
             }
         }
-
-        // 其他点击类型使用默认处理
         super.clicked(slotId, dragType, clickType, player);
     }
 

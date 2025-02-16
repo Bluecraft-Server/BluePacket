@@ -74,9 +74,9 @@ jobs:
         if: env.SKIP_BUILD == 'false'
         id: rename_file
         run: |
-          TARGET_JAR="BM_Updater-${{ env.VERSION }}.jar"
+          TARGET_JAR="BluePacket-${{ env.VERSION }}.jar"
           SOURCE_JAR=$(find build/libs -name "*.jar" -print -quit)
-          echo "FINAL_JAR_NAME=BM_Updater-${{ env.VERSION }}" >> $GITHUB_ENV
+          echo "FINAL_JAR_NAME=BluePacket-${{ env.VERSION }}" >> $GITHUB_ENV
           mv "${SOURCE_JAR}" "${TARGET_JAR}"
 
       - name: Upload Artifact

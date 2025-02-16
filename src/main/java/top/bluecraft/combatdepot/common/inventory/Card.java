@@ -26,8 +26,8 @@ public class Card implements ICard {
         this.texture = entry.getTexture();
     }
 
-    private final Map<Integer, Integer> extractionLimits = new HashMap<>();
-    private final Map<Integer, Integer> remainingCounts = new HashMap<>();
+    private final Map<Integer, Integer> extractionLimits = new HashMap<>();  // 槽位 -> 限制数量
+    private final Map<Integer, Integer> remainingCounts = new HashMap<>();   // 槽位 -> 剩余数量
 
     public boolean canExtract(int slotIndex) {
         if (!extractionLimits.containsKey(slotIndex)) {
@@ -38,6 +38,7 @@ public class Card implements ICard {
     }
 
     public void setExtractionLimit(int slotIndex, int limit) {
+        CombatDepot.LOGGER.info("Setting extraction limit for slot {} to {}", slotIndex, limit);
         if (limit <= 0) {
             extractionLimits.remove(slotIndex);
             remainingCounts.remove(slotIndex);
@@ -45,6 +46,7 @@ public class Card implements ICard {
             extractionLimits.put(slotIndex, limit);
             remainingCounts.put(slotIndex, limit); // 重置剩余次数
         }
+        CombatDepot.LOGGER.info("Current extraction limits: {}", extractionLimits);
     }
 
     public void decrementRemainingCount(int slotIndex) {
@@ -64,18 +66,18 @@ public class Card implements ICard {
         return remainingCounts.getOrDefault(slotIndex, 0);
     }
 
-    // 添加 NBT 序列化支持
+    // 修改 serializeNBT 方法确保数据被正确保存
     public CompoundTag serializeNBT() {
         CompoundTag tag = new CompoundTag();
 
-        // 序列化提取限制
+        // 保存提取限制
         CompoundTag limitsTag = new CompoundTag();
         for (Map.Entry<Integer, Integer> entry : extractionLimits.entrySet()) {
             limitsTag.putInt(String.valueOf(entry.getKey()), entry.getValue());
         }
         tag.put("ExtractionLimits", limitsTag);
 
-        // 序列化剩余次数
+        // 保存剩余次数
         CompoundTag remainingTag = new CompoundTag();
         for (Map.Entry<Integer, Integer> entry : remainingCounts.entrySet()) {
             remainingTag.putInt(String.valueOf(entry.getKey()), entry.getValue());
@@ -85,6 +87,7 @@ public class Card implements ICard {
         return tag;
     }
 
+    // 相应的反序列化方法
     public void deserializeNBT(CompoundTag tag) {
         extractionLimits.clear();
         remainingCounts.clear();
@@ -92,20 +95,23 @@ public class Card implements ICard {
         if (tag.contains("ExtractionLimits")) {
             CompoundTag limitsTag = tag.getCompound("ExtractionLimits");
             for (String key : limitsTag.getAllKeys()) {
-                int slot = Integer.parseInt(key);
-                extractionLimits.put(slot, limitsTag.getInt(key));
+                try {
+                    int slot = Integer.parseInt(key);
+                    extractionLimits.put(slot, limitsTag.getInt(key));
+                } catch (NumberFormatException ignored) {}
             }
         }
 
         if (tag.contains("RemainingCounts")) {
             CompoundTag remainingTag = tag.getCompound("RemainingCounts");
             for (String key : remainingTag.getAllKeys()) {
-                int slot = Integer.parseInt(key);
-                remainingCounts.put(slot, remainingTag.getInt(key));
+                try {
+                    int slot = Integer.parseInt(key);
+                    remainingCounts.put(slot, remainingTag.getInt(key));
+                } catch (NumberFormatException ignored) {}
             }
         }
     }
-
     @Override
     public List<ItemStack> getPageItems(int page) {
         int start = page * slotsPerPage;

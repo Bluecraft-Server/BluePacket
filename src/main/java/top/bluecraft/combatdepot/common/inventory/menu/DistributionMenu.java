@@ -55,7 +55,7 @@ public class DistributionMenu extends CombatDepotMenu {
 
     // 在 DistributionMenu.java 中添加
     @Override
-    public boolean moveItemStackTo(ItemStack stack, int startIndex, int endIndex, boolean reverseDirection) {
+    public boolean moveItemStackTo(@NotNull ItemStack stack, int startIndex, int endIndex, boolean reverseDirection) {
         // 检查是否从分发槽位移动到玩家物品栏
         if (startIndex < MenuConstants.SLOTS_PER_PAGE) {
             if (!player.hasPermissions(2)) {
@@ -87,25 +87,34 @@ public class DistributionMenu extends CombatDepotMenu {
         return super.moveItemStackTo(stack, startIndex, endIndex, reverseDirection);
     }
 
-    // 添加快捷栏处理逻辑
     @Override
     public void clicked(int slotId, int dragType, @NotNull ClickType clickType, @NotNull Player player) {
         if (slotId >= 0 && slotId < this.slots.size()) {
             Slot slot = this.slots.get(slotId);
 
-            // 处理快捷键点击
-            if (clickType == ClickType.SWAP && slot instanceof DistributionCardSlot) {
-                if (dragType >= 0 && dragType < 9) {  // 数字键 1-9
-                    if (!player.hasPermissions(2)) {
-                        // 非管理员需要检查限制
-                        ICard card = getCurrentCard();
-                        if (card instanceof Card card1) {
-                            int globalIndex = ((DistributionCardSlot)slot).getGlobalIndex();
-                            if (!card1.canExtract(globalIndex)) {
-                                return;
-                            }
-                        }
+            if (slot instanceof DistributionCardSlot distributionSlot) {
+                if (!player.hasPermissions(2)) {  // 非管理员检查
+                    GlobalCardStorage storage = GlobalCardStorage.get((ServerLevel) getWorld());
+                    Card card = storage.getInventory(getCurrentCard().getName());
+                    int globalIndex = distributionSlot.getGlobalIndex();
+
+                    if (!card.canExtract(globalIndex)) {
+                        return;  // 如果不能提取，直接返回
                     }
+
+                    // 如果是快捷键操作，在操作完成后减少次数
+                    boolean needDecrement = clickType == ClickType.PICKUP
+                            || clickType == ClickType.QUICK_MOVE
+                            || clickType == ClickType.SWAP;
+
+                    super.clicked(slotId, dragType, clickType, player);
+
+                    if (needDecrement) {
+                        card.decrementRemainingCount(globalIndex);
+                        storage.setDirty();
+                        syncDisplayInventory();
+                    }
+                    return;
                 }
             }
         }
@@ -114,55 +123,36 @@ public class DistributionMenu extends CombatDepotMenu {
 
     @Override
     public @NotNull ItemStack quickMoveStack(@NotNull Player player, int index) {
-        ItemStack itemstack;
         Slot slot = this.slots.get(index);
+        if (!slot.hasItem()) {
+            return ItemStack.EMPTY;
+        }
 
-        if (slot.hasItem()) {
-            ItemStack stackInSlot = slot.getItem();
-            itemstack = stackInSlot.copy();
+        ItemStack stackInSlot = slot.getItem();
+        ItemStack result = stackInSlot.copy();
 
-            ICard card = getCurrentCard();
-            // 从卡片槽位移动到玩家物品栏
-            if (index < MenuConstants.SLOTS_PER_PAGE && card instanceof Card card1) {
+        if (index < MenuConstants.SLOTS_PER_PAGE) {  // 从卡片槽位到玩家物品栏
+            if (!player.hasPermissions(2)) {  // 非管理员检查
                 if (slot instanceof DistributionCardSlot distributionSlot) {
-                    boolean isAdmin = player.hasPermissions(2);
+                    GlobalCardStorage storage = GlobalCardStorage.get((ServerLevel) getWorld());
+                    Card card = storage.getInventory(getCurrentCard().getName());
+                    int globalIndex = distributionSlot.getGlobalIndex();
 
-                    if (!isAdmin) {
-                        if (!card1.canExtract(distributionSlot.getGlobalIndex())) {
-                            return ItemStack.EMPTY;
-                        }
+                    if (!card.canExtract(globalIndex)) {
+                        return ItemStack.EMPTY;
                     }
 
-                    // 创建一个新的ItemStack用于移动，只设置一组物品的数量
-                    ItemStack toMove = itemstack.copy();
-
-                    // 寻找第一个可以放入的槽位
-                    for (int i = MenuConstants.PLAYER_INVENTORY_START; i < MenuConstants.PLAYER_INVENTORY_END; i++) {
-                        Slot targetSlot = this.slots.get(i);
-                        if (!targetSlot.hasItem()) {
-                            targetSlot.set(toMove);
-                            // 如果移动成功且不是管理员，减少剩余次数
-                            if (!isAdmin) {
-                                card1.decrementRemainingCount(distributionSlot.getGlobalIndex());
-                            }
-                            return itemstack;
-                        } else if (ItemStack.isSameItemSameTags(targetSlot.getItem(), toMove)) {
-                            int space = targetSlot.getItem().getMaxStackSize() - targetSlot.getItem().getCount();
-                            if (space > 0) {
-                                int toAdd = Math.min(space, toMove.getCount());
-                                targetSlot.getItem().grow(toAdd);
-                                // 如果移动成功且不是管理员，减少剩余次数
-                                if (!isAdmin) {
-                                    card1.decrementRemainingCount(distributionSlot.getGlobalIndex());
-                                }
-                                return itemstack;
-                            }
-                        }
+                    // 如果移动成功，减少剩余次数并保存
+                    if (moveItemStackTo(stackInSlot, MenuConstants.PLAYER_INVENTORY_START,
+                            MenuConstants.PLAYER_INVENTORY_END, true)) {
+                        card.decrementRemainingCount(globalIndex);
+                        storage.setDirty();
+                        syncDisplayInventory();
+                        return result;
                     }
                 }
             }
         }
-
         return ItemStack.EMPTY;
     }
 
@@ -208,27 +198,31 @@ public class DistributionMenu extends CombatDepotMenu {
             ItemStack currentItem = getItem();
             if (currentItem.isEmpty()) return ItemStack.EMPTY;
 
-            ICard card = menu.getCurrentCard();
-            int globalIndex = getGlobalIndex();
+            if (!isAdmin) {  // 非管理员需要检查限制
+                GlobalCardStorage storage = GlobalCardStorage.get((ServerLevel) menu.getWorld());
+                Card card = storage.getInventory(menu.getCurrentCard().getName());
+                int globalIndex = getGlobalIndex();
 
-            if(card instanceof Card card1) {
-                // 如果是管理员，可以无限取出
-                if (isAdmin) {
-                    ItemStack result = currentItem.copy();
-                    result.setCount(Math.min(amount, currentItem.getCount()));
-                    return result;
+                if (!card.canExtract(globalIndex)) {
+                    return ItemStack.EMPTY;
                 }
 
-                // 非管理员需要检查限制
-                if (card1.canExtract(globalIndex)) {
-                    ItemStack result = currentItem.copy();
-                    result.setCount(Math.min(amount, currentItem.getCount()));
-                    card1.decrementRemainingCount(globalIndex);
-                    return result;
-                }
+                // 如果可以提取，创建返回的物品堆
+                ItemStack result = currentItem.copy();
+                result.setCount(Math.min(amount, currentItem.getCount()));
+
+                // 减少提取次数并保存
+                card.decrementRemainingCount(globalIndex);
+                storage.setDirty();
+                menu.syncDisplayInventory();
+
+                return result;
             }
 
-            return ItemStack.EMPTY;
+            // 管理员直接取出
+            ItemStack result = currentItem.copy();
+            result.setCount(Math.min(amount, currentItem.getCount()));
+            return result;
         }
 
         @Override

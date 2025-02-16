@@ -19,55 +19,10 @@ import java.util.Map;
 public class GlobalCardStorage extends SavedData {
     private final Map<String, Card> cardInventories = new HashMap<>();
 
-    public static GlobalCardStorage load(CompoundTag tag) {
-        GlobalCardStorage storage = new GlobalCardStorage();
-        storage.cardInventories.clear();
-
-        if (tag.contains("Cards", Tag.TAG_COMPOUND)) {
-            CompoundTag cardsData = tag.getCompound("Cards");
-
-            // 遍历所有卡片
-            for (String cardName : cardsData.getAllKeys()) {
-                CompoundTag cardTag = cardsData.getCompound(cardName);
-
-                // 创建卡片配置
-                CardConfig.CardEntry entry = new CardConfig.CardEntry();
-                entry.setName(cardName);
-                entry.setTexture(CombatDepot.MODID + ":textures/gui/cards/" + cardName + ".png");
-
-                // 读取基本数据
-                int size = cardTag.getInt("Size");
-                NonNullList<ItemStack> inventory = NonNullList.withSize(size, ItemStack.EMPTY);
-
-                // 创建卡片实例
-                Card card = new Card(entry, inventory);
-
-                // 加载物品数据
-                ListTag itemsList = cardTag.getList("Items", Tag.TAG_COMPOUND);
-                for (int i = 0; i < itemsList.size(); i++) {
-                    CompoundTag slotTag = itemsList.getCompound(i);
-                    int slot = slotTag.getInt("Slot");
-                    if (slot >= 0 && slot < size) {
-                        inventory.set(slot, ItemStack.of(slotTag));
-                    }
-                }
-
-                // 加载提取限制数据
-                if (cardTag.contains("ExtractionData")) {
-                    card.deserializeNBT(cardTag.getCompound("ExtractionData"));
-                }
-
-                storage.cardInventories.put(cardName, card);
-            }
-        }
-        return storage;
-    }
-
     @Override
     public @NotNull CompoundTag save(@NotNull CompoundTag tag) {
         CompoundTag cardsData = new CompoundTag();
 
-        // 遍历所有卡片数据
         cardInventories.forEach((cardName, card) -> {
             CompoundTag cardTag = new CompoundTag();
             ListTag itemsList = new ListTag();
@@ -95,6 +50,48 @@ public class GlobalCardStorage extends SavedData {
 
         tag.put("Cards", cardsData);
         return tag;
+    }
+
+    public static GlobalCardStorage load(CompoundTag tag) {
+        GlobalCardStorage storage = new GlobalCardStorage();
+        storage.cardInventories.clear();
+
+        if (tag.contains("Cards", Tag.TAG_COMPOUND)) {
+            CompoundTag cardsData = tag.getCompound("Cards");
+
+            for (String cardName : cardsData.getAllKeys()) {
+                CompoundTag cardTag = cardsData.getCompound(cardName);
+
+                // 创建卡片配置
+                CardConfig.CardEntry entry = new CardConfig.CardEntry();
+                entry.setName(cardName);
+                entry.setTexture(CombatDepot.MODID + ":textures/gui/cards/" + cardName + ".png");
+
+                int size = cardTag.getInt("Size");
+                NonNullList<ItemStack> inventory = NonNullList.withSize(size, ItemStack.EMPTY);
+
+                // 创建卡片实例
+                Card card = new Card(entry, inventory);
+
+                // 加载物品数据
+                ListTag itemsList = cardTag.getList("Items", Tag.TAG_COMPOUND);
+                for (int i = 0; i < itemsList.size(); i++) {
+                    CompoundTag slotTag = itemsList.getCompound(i);
+                    int slot = slotTag.getInt("Slot");
+                    if (slot >= 0 && slot < size) {
+                        inventory.set(slot, ItemStack.of(slotTag));
+                    }
+                }
+
+                // 加载提取限制数据
+                if (cardTag.contains("ExtractionData")) {
+                    card.deserializeNBT(cardTag.getCompound("ExtractionData"));
+                }
+
+                storage.cardInventories.put(cardName, card);
+            }
+        }
+        return storage;
     }
 
     public static GlobalCardStorage get(ServerLevel level) {

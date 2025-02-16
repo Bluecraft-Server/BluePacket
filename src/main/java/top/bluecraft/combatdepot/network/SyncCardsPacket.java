@@ -46,7 +46,7 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
 
             // 如果是Card实例，保存提取限制数据
             if (card instanceof Card actualCard) {
-                cardTag.put("ExtractionData", actualCard.serializeNBT());
+                buffer.writeNbt(actualCard.serializeNBT());
             }
 
             buffer.writeNbt(cardTag);
@@ -106,9 +106,9 @@ public record SyncCardsPacket(List<ICard> cards, int cardOffset) {
             // 创建卡片实例
             Card card = new Card(entry, inventory);
 
-            // 读取提取限制数据
-            if (cardTag != null && cardTag.contains("ExtractionData")) {
-                card.deserializeNBT(cardTag.getCompound("ExtractionData"));
+            CompoundTag extractionData = buffer.readNbt();
+            if (extractionData != null) {
+                card.deserializeNBT(extractionData);
             }
 
             return card;

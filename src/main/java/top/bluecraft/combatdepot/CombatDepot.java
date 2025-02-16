@@ -98,6 +98,7 @@ public class CombatDepot {
         configmanager.load();
         event.enqueueWork(
                 () -> {
+                    CombatDepot.addNetworkMessage(SetExtractionLimitMessage.class, SetExtractionLimitMessage::encode, SetExtractionLimitMessage::decode, SetExtractionLimitMessage::handle);
                     CombatDepot.addNetworkMessage(UpdateCardSelectionMessage.class, UpdateCardSelectionMessage::encode, UpdateCardSelectionMessage::decode, UpdateCardSelectionMessage::handle);
                     CombatDepot.addNetworkMessage(UpdatePageMessage.class, UpdatePageMessage::encode, UpdatePageMessage::decode, UpdatePageMessage::handle);
                     CombatDepot.addNetworkMessage(AddItemToCardMessage.class, AddItemToCardMessage::encode, AddItemToCardMessage::decode, AddItemToCardMessage::handle);

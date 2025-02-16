@@ -21,17 +21,15 @@ import top.bluecraft.combatdepot.network.SyncCardsPacket;
 import java.util.ArrayList;
 import java.util.List;
 
-import static top.bluecraft.combatdepot.config.CardConfig.createDefaultConfig;
-
 public class CombatDepotMenu extends AbstractContainerMenu {
 
-    protected final List<CardSlot> cardSlots = new ArrayList<>();
     private final Player player;
     private final Level world;
     private final List<ICard> cards;
     private int selectedCardIndex;
     private int currentPage;
     private int cardOffset = 0;
+    protected final List<CardSlot> cardSlots = new ArrayList<>();
 
 
     public CombatDepotMenu(int windowId, Inventory playerInventory, int selectedCard, int page) {
@@ -43,9 +41,6 @@ public class CombatDepotMenu extends AbstractContainerMenu {
 
         // 加载卡片配置
         CardConfig config = CardConfig.load();
-        if (config == null) {
-            config = createDefaultConfig();
-        }
 
         // 确保在服务端时从SavedData加载最新数据
         if (!world.isClientSide()) {
@@ -58,10 +53,6 @@ public class CombatDepotMenu extends AbstractContainerMenu {
         // 初始化槽位
         initializeSlots(playerInventory);
         updateCardSlots();
-    }
-
-    public static int getSlotSize() {
-        return MenuConstants.SLOTS_PER_PAGE;
     }
 
     protected void initializeSlots(Inventory playerInventory) {
@@ -189,14 +180,6 @@ public class CombatDepotMenu extends AbstractContainerMenu {
         return cards;
     }
 
-    public void setCards(List<ICard> newCards) {
-        cards.clear();
-        cards.addAll(newCards);
-        if (selectedCardIndex >= cards.size()) {
-            selectedCardIndex = Math.max(0, cards.size() - 1);
-        }
-    }
-
     public int getCurrentPage() {
         return currentPage;
     }
@@ -221,6 +204,10 @@ public class CombatDepotMenu extends AbstractContainerMenu {
         return world;
     }
 
+    public static int getSlotSize() {
+        return MenuConstants.SLOTS_PER_PAGE;
+    }
+
     public void syncDisplayInventory() {
         if (!world.isClientSide) {
             ServerPlayer serverPlayer = (ServerPlayer) player;
@@ -228,6 +215,14 @@ public class CombatDepotMenu extends AbstractContainerMenu {
                     PacketDistributor.PLAYER.with(() -> serverPlayer),
                     new SyncCardsPacket(cards, cardOffset)
             );
+        }
+    }
+
+    public void setCards(List<ICard> newCards) {
+        cards.clear();
+        cards.addAll(newCards);
+        if (selectedCardIndex >= cards.size()) {
+            selectedCardIndex = Math.max(0, cards.size() - 1);
         }
     }
 

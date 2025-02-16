@@ -17,11 +17,13 @@ public class Card implements ICard {
     private final String name;
     private final int slotsPerPage;
     private final ResourceLocation texture;
+    private NonNullList<ItemStack> inventory;
+
     // 存储每个槽位的取出次数限制
     private final Map<Integer, Integer> extractionLimits = new HashMap<>();
+
     // 存储每个槽位的剩余取出次数
     private final Map<Integer, Integer> remainingCounts = new HashMap<>();
-    private NonNullList<ItemStack> inventory;
 
     public Card(CardConfig.CardEntry entry, NonNullList<ItemStack> inventory) {
         this.name = entry.getName();
@@ -119,8 +121,7 @@ public class Card implements ICard {
                             remainingCounts.put(slot, limit);
                         }
                     }
-                } catch (NumberFormatException ignored) {
-                }
+                } catch (NumberFormatException ignored) {}
             }
         }
     }

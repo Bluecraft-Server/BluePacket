@@ -197,7 +197,7 @@ public class DistributionMenu extends CombatDepotMenu {
             ICard card = menu.getCurrentCard();
             int globalIndex = getGlobalIndex();
 
-            if (card instanceof Card card1) {
+            if(card instanceof Card card1) {
                 // 如果是管理员，可以无限取出
                 if (isAdmin) {
                     ItemStack result = currentItem.copy();

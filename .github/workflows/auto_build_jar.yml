@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - '*'
+  workflow_dispatch: # 允许手动触发
 
 jobs:
   build-and-publish:
@@ -12,6 +13,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取完整提交历史
 
       - name: Set up Zulu 17
         uses: actions/setup-java@v4
@@ -85,24 +88,49 @@ jobs:
           name: ${{ env.FINAL_JAR_NAME }}
           path: ${{ env.FINAL_JAR_NAME }}.jar
 
+      - name: Collect build info
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          echo "JAVA_VERSION=$(java -version 2>&1 | head -n 1 | sed 's/"//g')" >> $GITHUB_ENV
+          echo "GRADLE_VERSION=$(./gradlew --version | grep Gradle | awk '{print $2}')" >> $GITHUB_ENV
+          echo "BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_ENV
+
       - name: Create Pre-Release and Upload JAR file
         if: env.SKIP_UPLOAD == 'false' && env.SKIP_BUILD == 'false'
         uses: ncipollo/release-action@v1.15.0
         with:
           tag: ${{ env.VERSION }}
-          name: "版本 ${{ env.VERSION }} (自动创建的版本)"
+          name: "CI Build - ${{ env.VERSION }}"
           body: |
-            此预发布版本由Github Action自动构建。
+            ## 注意事项
+            此预发布版本由 GitHub Action 自动构建。
+            
             请注意，此版本为测试版，并不代表最终版本。
-            ### 最后一次提交信息
-            #### 提交SHA:
-            > ${{ github.sha }}
-            #### 提交作者:
-            > ${{ github.event.head_commit.author.username }} 
-            #### 提交时间:
-            > ${{ github.event.head_commit.timestamp }}
-            #### 提交消息:
-            > ${{ github.event.head_commit.message }}
+            
+            ---
+            
+            ## 构建信息
+            | 属性          | 值                          |
+            | ------------- | -------------------------- |
+            | 版本号        | `${{ env.VERSION }}`        |
+            | Java 版本     | `${{ env.JAVA_VERSION }}`   |
+            | Gradle 版本   | `${{ env.GRADLE_VERSION }}` |
+            | 构建时间      | `${{ env.BUILD_TIME }}`     |
+            
+            ## 触发信息
+            - 触发方式: `${{ github.event_name }}`
+            - 触发分支: `${{ github.ref }}`
+            - 执行记录: [运行 #${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - 操作账号: `${{ github.actor }}`
+            
+            ## 提交信息
+            ```text
+            SHA:    ${{ github.sha }}
+            作者:    ${{ github.event.head_commit.author.name || 'N/A' }}
+            时间:    ${{ github.event.head_commit.timestamp || env.BUILD_TIME }}
+            消息:    ${{ github.event.head_commit.message || 'No commit message' }}
+            ```
+
           draft: false
           prerelease: true
           makeLatest: true

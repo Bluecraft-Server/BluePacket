@@ -3,7 +3,7 @@
 <br>
 
 <div align="center">
-    <img width="250px" src="./img/logo.png" align="center" alt="Logo" />
+    <img width="150px" src="./img/logo.png" align="center" alt="Logo" />
     <h2 align="center">Combat Depot</h2>
     <p align="center">一个可自定义化的物品浏览器，依靠外部存储来自定义化你的物品发放系统。</p>
 

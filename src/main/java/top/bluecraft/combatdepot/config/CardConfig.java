@@ -1,7 +1,7 @@
 package top.bluecraft.combatdepot.config;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.stream.JsonReader;
 import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -10,12 +10,10 @@ import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.common.inventory.Card;
-import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 
 import java.io.File;
-import java.io.Reader;
-import java.io.Writer;
-import java.lang.reflect.Modifier;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -23,31 +21,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static top.bluecraft.combatdepot.CombatDepot.CONFIGDIR;
+
+
 public class CardConfig {
-    private static final Gson GSON = new GsonBuilder()
-            .excludeFieldsWithModifiers(Modifier.TRANSIENT, Modifier.STATIC)
-            .setLenient()
-            .setPrettyPrinting()
-            .create();
+    public static final String CONFIG_FILE = "cards.json";
 
-    private static final String CONFIG_FILE = "cards.json";
-
-    private boolean disableDefaultCards;
-    private List<CardEntry> entries;
+    public boolean disableDefaultCards;
+    public List<CardEntry> entries;
 
     // 加载配置
     public static CardConfig load() {
-        Path configDir = FMLPaths.CONFIGDIR.get().resolve(CombatDepot.MODID);
-        Path configFile = configDir.resolve(CONFIG_FILE);
+        File configFile = new File(CONFIGDIR, CONFIG_FILE);
 
-        if (!Files.exists(configFile)) {
+        if (!configFile.exists()) {
             CardConfig defaultConfig = createDefaultConfig();
             save(defaultConfig);
             return defaultConfig;
         }
 
-        try (Reader reader = Files.newBufferedReader(configFile)) {
-            return GSON.fromJson(reader, CardConfig.class);
+        try (JsonReader jsonReader = new JsonReader(new FileReader(configFile))) {
+            return new Gson().fromJson(jsonReader, CardConfig.class);
         } catch (Exception e) {
             CombatDepot.LOGGER.error("Failed to load card config", e);
             return createDefaultConfig();
@@ -57,19 +51,25 @@ public class CardConfig {
     // 保存配置
     public static void save(CardConfig config) {
         Path configDir = FMLPaths.CONFIGDIR.get().resolve(CombatDepot.MODID);
-        Path configFile = configDir.resolve(CONFIG_FILE);
+
+        File configFile = new File(CONFIGDIR, CONFIG_FILE);
 
         try {
             Files.createDirectories(configDir);
-            try (Writer writer = Files.newBufferedWriter(configFile)) {
-                GSON.toJson(config, writer);
+            try {
+                FileWriter writer = new FileWriter(configFile);
+                writer.write(new Gson().toJson(config));
+                writer.close();
+            } catch (Exception e) {
+                CombatDepot.LOGGER.error("Failed to save card config: ", e);
             }
+
         } catch (Exception e) {
             CombatDepot.LOGGER.error("Failed to save card config", e);
         }
     }
 
-    private static CardConfig createDefaultConfig() {
+    public static CardConfig createDefaultConfig() {
         CardConfig config = new CardConfig();
         config.disableDefaultCards = false;
         config.entries = new ArrayList<>();
@@ -244,12 +244,12 @@ public class CardConfig {
             return inventorySize;
         }
 
-        public int getSlotPerPage() {
-            return slotPerPage;
-        }
-
         public void setInventorySize(int inventorySize) {
             this.inventorySize = inventorySize;
+        }
+
+        public int getSlotPerPage() {
+            return slotPerPage;
         }
 
         public Map<String, String> getTranslations() {

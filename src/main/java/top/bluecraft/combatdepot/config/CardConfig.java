@@ -1,8 +1,8 @@
 package top.bluecraft.combatdepot.config;
 
-import com.google.gson.Gson;
-import com.google.gson.stream.JsonReader;
+import com.google.gson.*;
 import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.loading.FMLPaths;
@@ -11,9 +11,9 @@ import top.bluecraft.combatdepot.api.ICard;
 import top.bluecraft.combatdepot.common.data.GlobalCardStorage;
 import top.bluecraft.combatdepot.common.inventory.Card;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.Reader;
+import java.io.Writer;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -21,32 +21,32 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static top.bluecraft.combatdepot.CombatDepot.CONFIGDIR;
-
-
 public class CardConfig {
-    public static String CONFIG_FILE = "cards.json";
+    private static final Gson GSON = new GsonBuilder()
+            .registerTypeAdapter(ResourceLocation.class, new ResourceLocationAdapter())
+            .registerTypeAdapter(NonNullList.class, new NonNullListAdapter())
+            .registerTypeAdapter(ItemStack.class, new ItemStackAdapter())
+            .setPrettyPrinting()
+            .create();
 
-    public boolean disableDefaultCards;
-    public List<CardEntry> entries;
+    private static final String CONFIG_FILE = "cards.json";
+
+    private boolean disableDefaultCards;
+    private List<CardEntry> entries;
 
     // 加载配置
     public static CardConfig load() {
-        File configFile = new File(CONFIGDIR, CONFIG_FILE);
+        Path configDir = FMLPaths.CONFIGDIR.get().resolve(CombatDepot.MODID);
+        Path configFile = configDir.resolve(CONFIG_FILE);
 
-        if (!configFile.exists()) {
+        if (!Files.exists(configFile)) {
             CardConfig defaultConfig = createDefaultConfig();
             save(defaultConfig);
             return defaultConfig;
         }
 
-        try (JsonReader jsonReader = new JsonReader(new FileReader(configFile))) {
-            if (jsonReader.toString().isEmpty()) {
-                CardConfig defaultConfig = createDefaultConfig();
-                save(defaultConfig);
-                return defaultConfig;
-            }
-            return new Gson().fromJson(jsonReader, CardConfig.class);
+        try (Reader reader = Files.newBufferedReader(configFile)) {
+            return GSON.fromJson(reader, CardConfig.class);
         } catch (Exception e) {
             CombatDepot.LOGGER.error("Failed to load card config", e);
             return createDefaultConfig();
@@ -56,22 +56,67 @@ public class CardConfig {
     // 保存配置
     public static void save(CardConfig config) {
         Path configDir = FMLPaths.CONFIGDIR.get().resolve(CombatDepot.MODID);
-        File configFile = new File(CONFIGDIR, CONFIG_FILE);
+        Path configFile = configDir.resolve(CONFIG_FILE);
 
         try {
             Files.createDirectories(configDir);
-            try (FileWriter writer = new FileWriter(configFile)) {
-                new Gson().toJson(config, writer);
-                CombatDepot.LOGGER.info("配置已成功保存到: {}", configFile.getAbsolutePath());
-            } catch (Exception e) {
-                CombatDepot.LOGGER.error("保存配置文件时发生错误: ", e);
+            try (Writer writer = Files.newBufferedWriter(configFile)) {
+                GSON.toJson(config, writer);
             }
         } catch (Exception e) {
-            CombatDepot.LOGGER.error("创建配置目录时发生错误: ", e);
+            CombatDepot.LOGGER.error("Failed to save card config", e);
         }
     }
 
-    public static CardConfig createDefaultConfig() {
+    // 序列化适配器
+    private static class ResourceLocationAdapter implements JsonSerializer<ResourceLocation>, JsonDeserializer<ResourceLocation> {
+        @Override
+        public JsonElement serialize(ResourceLocation src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(src.toString());
+        }
+
+        @Override
+        public ResourceLocation deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return new ResourceLocation(json.getAsString());
+        }
+    }
+
+    private static class NonNullListAdapter implements JsonSerializer<NonNullList<?>>, JsonDeserializer<NonNullList<?>> {
+        @Override
+        public JsonElement serialize(NonNullList<?> src, Type typeOfSrc, JsonSerializationContext context) {
+            return context.serialize(new ArrayList<>(src));
+        }
+
+        @Override
+        public NonNullList<?> deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            List<?> list = context.deserialize(json, ArrayList.class);
+            NonNullList<Object> result = NonNullList.create();
+            result.addAll(list);
+            return result;
+        }
+    }
+
+    private static class ItemStackAdapter implements JsonSerializer<ItemStack>, JsonDeserializer<ItemStack> {
+        @Override
+        public JsonElement serialize(ItemStack stack, Type typeOfSrc, JsonSerializationContext context) {
+            CompoundTag tag = stack.save(new CompoundTag());
+            return new JsonPrimitive(tag.toString());
+        }
+
+        @Override
+        public ItemStack deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            try {
+                CompoundTag tag = new CompoundTag();
+                // 这里需要实现从字符串到 CompoundTag 的转换
+                // 简单起见，返回空物品栈
+                return ItemStack.EMPTY;
+            } catch (Exception e) {
+                return ItemStack.EMPTY;
+            }
+        }
+    }
+
+    private static CardConfig createDefaultConfig() {
         CardConfig config = new CardConfig();
         config.disableDefaultCards = false;
         config.entries = new ArrayList<>();
@@ -199,18 +244,16 @@ public class CardConfig {
     }
 
     public static class CardEntry {
-        public boolean enabled;
-        public String name;
-        public int inventorySize;
-        public int slotPerPage;
-        public String texture;
-        public Map<String, String> translations;
-        public NonNullList<ItemStack> inventory;
-
+        private boolean enabled;
+        private String name;
+        private int inventorySize;
+        private int slotPerPage = 110;
+        private String texture;
+        private Map<String, String> translations = new HashMap<>();
+        private transient NonNullList<ItemStack> inventory;
 
         public ResourceLocation getTexture() {
             if (texture == null) {
-                // 提供默认纹理以防null
                 return new ResourceLocation(CombatDepot.MODID, "textures/gui/cards/default.png");
             }
             if (texture.contains(":")) {
@@ -218,6 +261,10 @@ public class CardConfig {
                 return new ResourceLocation(parts[0], parts[1]);
             }
             return new ResourceLocation(CombatDepot.MODID, texture);
+        }
+
+        public String getTextureString() {
+            return texture;
         }
 
         public void setTexture(String texture) {
@@ -246,12 +293,12 @@ public class CardConfig {
             return inventorySize;
         }
 
-        public void setInventorySize(int inventorySize) {
-            this.inventorySize = inventorySize;
-        }
-
         public int getSlotPerPage() {
             return slotPerPage;
+        }
+
+        public void setInventorySize(int inventorySize) {
+            this.inventorySize = inventorySize;
         }
 
         public Map<String, String> getTranslations() {

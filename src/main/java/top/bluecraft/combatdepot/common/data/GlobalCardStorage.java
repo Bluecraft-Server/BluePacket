@@ -12,6 +12,7 @@ import top.bluecraft.combatdepot.CombatDepot;
 import top.bluecraft.combatdepot.common.inventory.Card;
 import top.bluecraft.combatdepot.common.inventory.menu.CombatDepotMenu;
 import top.bluecraft.combatdepot.config.CardConfig;
+import top.bluecraft.combatdepot.network.SyncCardsPacket;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -66,28 +67,6 @@ public class GlobalCardStorage extends SavedData {
         return storage;
     }
 
-    public static GlobalCardStorage get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(
-                GlobalCardStorage::load,
-                GlobalCardStorage::new,
-                "card_storage" // 数据的唯一标识符
-        );
-    }
-
-    public static void readRemainingCounts(CompoundTag inventoryTag, Card card) {
-        if (inventoryTag.contains("RemainingCounts")) {
-            CompoundTag remainingTag = inventoryTag.getCompound("RemainingCounts");
-            for (String key : remainingTag.getAllKeys()) {
-                try {
-                    int slot = Integer.parseInt(key);
-                    int count = remainingTag.getInt(key);
-                    card.setRemainingCount(slot, count);
-                } catch (NumberFormatException ignored) {
-                }
-            }
-        }
-    }
-
     @Override
     public @NotNull CompoundTag save(@NotNull CompoundTag tag) {
         CompoundTag cardsData = new CompoundTag();
@@ -126,6 +105,27 @@ public class GlobalCardStorage extends SavedData {
 
         tag.put("Cards", cardsData);
         return tag;
+    }
+
+    public static GlobalCardStorage get(ServerLevel level) {
+        return level.getDataStorage().computeIfAbsent(
+                GlobalCardStorage::load,
+                GlobalCardStorage::new,
+                "card_storage" // 数据的唯一标识符
+        );
+    }
+
+    public static void readRemainingCounts(CompoundTag inventoryTag, Card card) {
+        if (inventoryTag.contains("RemainingCounts")) {
+            CompoundTag remainingTag = inventoryTag.getCompound("RemainingCounts");
+            for (String key : remainingTag.getAllKeys()) {
+                try {
+                    int slot = Integer.parseInt(key);
+                    int count = remainingTag.getInt(key);
+                    card.setRemainingCount(slot, count);
+                } catch (NumberFormatException ignored) {}
+            }
+        }
     }
 
     public Card getInventory(String cardName) {

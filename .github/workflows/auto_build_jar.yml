@@ -76,7 +76,7 @@ jobs:
         run: |
           TARGET_JAR="CombatDepot-${{ env.VERSION }}.jar"
           SOURCE_JAR=$(find build/libs -name "*.jar" -print -quit)
-          echo "FINAL_JAR_NAME=BluePacket-${{ env.VERSION }}" >> $GITHUB_ENV
+          echo "FINAL_JAR_NAME=CombatDepot-${{ env.VERSION }}" >> $GITHUB_ENV
           mv "${SOURCE_JAR}" "${TARGET_JAR}"
 
       - name: Upload Artifact

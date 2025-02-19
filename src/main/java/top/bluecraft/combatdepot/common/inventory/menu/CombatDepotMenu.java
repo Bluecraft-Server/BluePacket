@@ -40,7 +40,10 @@ public class CombatDepotMenu extends AbstractContainerMenu {
         this.currentPage = page;
 
         // 加载卡片配置
-        CardConfig config = CardConfig.load();
+        CardConfig config = CardConfig.load(); // 确保总是有一个有效的配置
+        if (config == null) {
+            config = CardConfig.createDefaultConfig();
+        }
 
         // 确保在服务端时从SavedData加载最新数据
         if (!world.isClientSide()) {

@@ -116,7 +116,7 @@ public class CardConfig {
         }
     }
 
-    private static CardConfig createDefaultConfig() {
+    public static CardConfig createDefaultConfig() {
         CardConfig config = new CardConfig();
         config.disableDefaultCards = false;
         config.entries = new ArrayList<>();
@@ -204,7 +204,7 @@ public class CardConfig {
 
     public void loadFromGlobalStorage(GlobalCardStorage storage) {
         for (CardEntry entry : entries) {
-            if (entry.isEnabled()) {
+            if (entry != null && entry.isEnabled()) {
                 // 从全局存储获取该卡片
                 Card storedCard = storage.getInventory(entry.getName());
                 NonNullList<ItemStack> inventory = storedCard.getInventory();

@@ -7,8 +7,8 @@
     <h2 align="center">Combat Depot</h2>
     <p align="center">一个可自定义化的物品浏览器，依靠外部存储来自定义化你的物品发放系统。</p>
 
-<a href="https://qm.qq.com/q/UTIXXOqOEq" target="_blank">
-    <img src="https://img.shields.io/badge/778454105-4285F4?style=for-the-badge&logo=qq&logoColor=white" 
+<a href="https://qm.qq.com/q/LpfQMIx06i" target="_blank">
+    <img src="https://img.shields.io/badge/1017588071-4285F4?style=for-the-badge&logo=qq&logoColor=white" 
         alt="加入 QQ 开发群组"
         style="border: none;">
 </a>
@@ -109,7 +109,7 @@
 
 如果你在使用过程中遇到任何问题，或者有好的建议，欢迎通过以下方式联系:
 
-* 我们的开发组 QQ 群: `1017588071`
+* 我们的开发组 QQ 群: `778454105`
 * 主要负责人 QQ 号：`2149720295`
 
 ## 💡 计划功能​
